@@ -17,13 +17,15 @@ export interface GallerySection {
   layout: "grid" | "full" | "before-after" | "paired-compare";
   items: GalleryImage[];
   description?: string;
-  /** Short checklist shown after images: "Что изменили" */
+  /** Короткий чеклист, отображаемый после изображений: "Что изменили" */
   changes?: string[];
-  /** Compact result card shown after changes */
+  /** Скрыть галерею без удаления данных */
+  hidden?: boolean;
+  /** Компактная карточка результата, отображаемая после изменений */
   result?: { label: string; value: string; note?: string };
-  /** Multiple result metrics */
+  /** Несколько метрик результата */
   results?: Array<{ label: string; value: string; note?: string }>;
-  /** Labels for paired-compare columns */
+  /** Метки для колонки paired-compare */
   pairLabels?: string[];
 }
 
@@ -35,10 +37,10 @@ export interface KPI {
 
 export interface StrategyGroup {
   title: string;
-  /** Short uppercase label above card title (e.g. "SEO", "Content", "Growth") */
+  /** Короткая заглавная метка над заголовком карточки (например, "SEO", "Content", "Growth") */
   label?: string;
   items: string[];
-  /** Visually de-emphasize (e.g. experimental track) */
+  /** Визуально деэмфазировать (например, экспериментальная ветка) */
   secondary?: boolean;
 }
 
@@ -52,6 +54,8 @@ export interface OrganicComparisonItem {
 export interface OrganicComparison {
   period: string;
   items: OrganicComparisonItem[];
+  /** Сноска под таблицей */
+  note?: string;
 }
 
 export interface GrowthHypothesis {
@@ -74,6 +78,11 @@ export interface AntiCase {
   decision?: string;
 }
 
+export interface ClosureStep {
+  icon: "ban" | "funnel" | "stop";
+  text: string;
+}
+
 export interface FirstTestBlock {
   title: string;
   paragraphs: string[];
@@ -85,7 +94,7 @@ export interface CaseStudy {
   id: string;
   title: string;
   subtitle?: string;
-  /** Accent line shown above KPI grid in hero (e.g. "+63% рост конверсии органики за 6 месяцев") */
+  /** Акцентная строка, отображаемая над сеткой KPI в блоке hero */
   heroAccent?: string;
   comparisonPeriod?: string;
   niche: string;
@@ -97,22 +106,22 @@ export interface CaseStudy {
   kpis: KPI[];
   startingPoint?: string[];
   challenge: string[];
-  /** Intro line for "Подход" section */
+  /** Вступительная строка для блока "Подход" */
   approach?: string;
   strategyGroups: StrategyGroup[];
   results: string[];
-  /** Intro line for results block (e.g. "За период работы с SEO-сайтом (Tilda):") */
+  /** Вступительная строка для блока результатов ("За период работы с SEO-сайтом (Tilda):") */
   resultsIntro?: string;
-  /** Additional results with separate heading */
+  /** Дополнительные результаты с отдельным заголовком */
   resultsAdditional?: { heading: string; items: string[] };
-  /** Note between main and additional results */
+  /** Примечание между основными и дополнительными результатами */
   resultsNote?: string;
   businessEffect?: KPI[];
   growthPlan?: GrowthHypothesis[];
   growthIdeas?: { intro: string; items: GrowthIdea[] };
-  /** Toggle visibility of Results block */
+  /** Блок результатов */
   showResults?: boolean;
-  /** Toggle visibility of Growth Ideas block */
+  /** Блок идей для роста */
   showGrowthIdeas?: boolean;
   learned: string[];
   organicComparison?: OrganicComparison;
@@ -122,8 +131,10 @@ export interface CaseStudy {
   firstTest?: FirstTestBlock;
   galleriesIntro?: string;
   antiCase?: AntiCase;
+  /** Показывать блок антикейса (по умолчанию true) */
+  showAntiCase?: boolean;
   closureReason?: string[];
-  /** Legal disclaimer shown at the bottom of the case page */
+  closureChain?: ClosureStep[];
   legalNote?: string;
 }
 
@@ -160,15 +171,15 @@ export interface PersonalInfo {
 export const personalInfo: PersonalInfo = {
   name: "Михайличенко Андрей",
   title: "Системный digital-маркетолог",
-  bio: "Больше 5 лет в digital.\nРаботаю с привлечением, аналитикой и воронками.\nСам внедряю изменения на уровне сайта и процессов.\n\nИщу проект, где можно выстраивать систему роста через гипотезы, данные и техническую реализацию.",
+  bio: "Больше 5 лет в digital.\nПомогаю улучшать конверсию и эффективность digital-каналов: от трафика до сайта и воронки. Работаю на стыке маркетинга, аналитики и технической реализации: привлекаю трафик и улучшаю продуктовую часть — сайт, структуру, точки конверсии.",
   email: "hello.mikhaylichenko@gmail.com",
   phone: "+7 (918) 597-57-14",
   location: "Ростов-на-Дону, Россия",
   avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
   socialLinks: [
-    { label: "Telegram", href: "https://t.me/your_username" },
-    { label: "MAX", href: "https://vk.com/your_username" },
-    { label: "LinkedIn", href: "https://linkedin.com/in/your_username" },
+    { label: "Telegram", href: " #" },
+    { label: "MAX", href: " # " },
+    { label: "LinkedIn", href: " # " },
   ],
   skillGroups: [
     {
@@ -234,7 +245,7 @@ export const personalInfo: PersonalInfo = {
 };
 
 // =====================================
-// кейс - МСК
+// Кейсы
 // =====================================
 export { mskDeveloperCase } from "@/data/cases/msk-developer";
 export { revitaleClinicCase } from "@/data/cases/revitale-clinic";

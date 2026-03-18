@@ -16,24 +16,32 @@ const channels = [
     label: "Telegram",
     href: personalInfo.socialLinks.find((l) => l.label === "Telegram")?.href ?? "#",
     desc: "Быстрый ответ в мессенджере",
+    iconColor: "text-[#229ED9]",
+    bgColor: "bg-[#229ED9]/10 dark:bg-[#229ED9]/15",
   },
   {
     icon: MessageCircle,
     label: "MAX",
     href: personalInfo.socialLinks.find((l) => l.label === "MAX")?.href ?? "#",
-    desc: "Написать в MAX (VK)",
+    desc: "Написать в MAX",
+    iconColor: "text-[#0077FF]",
+    bgColor: "bg-[#0077FF]/10 dark:bg-[#0077FF]/15",
   },
   {
     icon: Phone,
     label: personalInfo.phone,
     href: `tel:${phoneRaw}`,
     desc: "Позвонить напрямую",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
   },
   {
     icon: Mail,
     label: personalInfo.email,
     href: `mailto:${personalInfo.email}`,
     desc: "Написать на почту",
+    iconColor: "text-orange-500 dark:text-orange-400",
+    bgColor: "bg-orange-50 dark:bg-orange-900/20",
   },
 ];
 
@@ -75,7 +83,7 @@ export const ContactModal = memo(function ContactModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-[420px] rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-gray-900">
+      <div className="relative w-full max-w-[420px] rounded-2xl border border-gray-200/80 bg-white p-6 shadow-2xl ring-1 ring-black/5 dark:border-white/10 dark:bg-gray-900 dark:ring-white/5">
         {/* Close */}
         <button
           onClick={onClose}
@@ -86,25 +94,22 @@ export const ContactModal = memo(function ContactModal({
         </button>
 
         {/* Title */}
-        <h2 className="mb-1 text-xl font-bold text-gray-900 dark:text-gray-100">
+        <h2 className="mb-5 text-xl font-bold text-gray-900 dark:text-gray-100">
           Связаться
         </h2>
-        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-          Выберите удобный способ связи
-        </p>
 
         {/* Channels */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {channels.map((ch) => (
             <a
               key={ch.label}
               href={ch.href}
               target={ch.href.startsWith("http") ? "_blank" : undefined}
               rel={ch.href.startsWith("http") ? "noreferrer" : undefined}
-              className="flex items-center gap-4 rounded-xl border border-gray-100 px-4 py-3.5 transition-all hover:border-gray-300 hover:bg-gray-50 dark:border-white/8 dark:hover:border-white/20 dark:hover:bg-white/5"
+              className="flex items-center gap-4 rounded-xl border border-gray-100 px-4 py-3.5 transition-all hover:border-gray-200 hover:bg-gray-50 hover:shadow-sm active:scale-[0.99] dark:border-white/8 dark:hover:border-white/15 dark:hover:bg-white/5"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-300">
-                <ch.icon className="h-5 w-5" />
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${ch.bgColor}`}>
+                <ch.icon className={`h-5 w-5 ${ch.iconColor}`} />
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">

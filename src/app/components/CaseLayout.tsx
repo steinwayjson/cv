@@ -1,12 +1,12 @@
 import { memo, type ReactNode, useEffect, useRef, useCallback, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Mail, CheckCircle2, Lightbulb, ChevronDown, ZoomIn } from "lucide-react";
+import { ArrowRight, Mail, CheckCircle2, Lightbulb, ChevronDown, ZoomIn, ShieldBan, Filter, CircleStop } from "lucide-react";
 import { HeroCase } from "./HeroCase";
 import { ImageGallery } from "./ImageGallery";
 import { ImageModal } from "./ImageModal";
 import { ContactModal } from "./ContactModal";
 import { FadeIn } from "./FadeIn";
-import type { CaseStudy, PersonalInfo, FirstTestBlock } from "@/data/portfolioData";
+import type { CaseStudy, PersonalInfo, FirstTestBlock, ClosureStep } from "@/data/portfolioData";
 
 interface CaseLayoutProps {
   caseStudy: CaseStudy;
@@ -319,14 +319,17 @@ export const CaseLayout = memo(function CaseLayout({
         )}
 
         {/* ─── Galleries / Before-After ─── */}
-        {caseStudy.galleries && caseStudy.galleries.length > 0 && (
-          <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
-            <h2 className="mb-[34px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
-              Реализация
-            </h2>
-            <ImageGallery galleries={caseStudy.galleries} />
-          </FadeIn>
-        )}
+        {(() => {
+          const visibleGalleries = caseStudy.galleries?.filter((g) => !g.hidden);
+          return visibleGalleries && visibleGalleries.length > 0 && (
+            <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
+              <h2 className="mb-[34px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
+                Реализация
+              </h2>
+              <ImageGallery galleries={visibleGalleries} />
+            </FadeIn>
+          );
+        })()}
 
         {/* ─── Metrics + Analytics (combined) ─── */}
         {(caseStudy.organicComparison || (caseStudy.analyticsScreenshots && caseStudy.analyticsScreenshots.items.length > 0)) && (
@@ -362,6 +365,13 @@ export const CaseLayout = memo(function CaseLayout({
                     </div>
                   ))}
                 </div>
+              )}
+
+              {/* Table note */}
+              {caseStudy.organicComparison?.note && (
+                <p className="mb-8 -mt-5 text-[12px] leading-[1.618] text-gray-400 dark:text-gray-500">
+                  {caseStudy.organicComparison.note}
+                </p>
               )}
 
               {/* Analytics screenshots — grid, no scroll */}
@@ -447,7 +457,7 @@ export const CaseLayout = memo(function CaseLayout({
         </FadeIn>}
 
         {/* ─── Anti-case ─── */}
-        {caseStudy.antiCase && (
+        {caseStudy.antiCase && caseStudy.showAntiCase !== false && (
           <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
             <div className="rounded-2xl border border-red-100 bg-red-50/60 px-6 py-8 md:px-8 md:py-10 dark:border-red-900/30 dark:bg-red-900/10">
               <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -553,7 +563,39 @@ export const CaseLayout = memo(function CaseLayout({
         )}
 
         {/* ─── Closure reason ─── */}
-        {caseStudy.closureReason && caseStudy.closureReason.length > 0 && (
+        {caseStudy.closureChain && caseStudy.closureChain.length > 0 ? (
+          <FadeIn as="section" className="border-t border-gray-100 pt-[55px] pb-[34px] md:pt-[89px] md:pb-[55px] dark:border-white/8">
+            <div className={cx.outer}>
+              <h2 className="mb-[34px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
+                Почему проект закрылся
+              </h2>
+              <div className="flex flex-col items-center gap-3 md:flex-row md:items-start md:gap-0">
+                {caseStudy.closureChain.map((step, i) => (
+                  <div key={i} className="flex flex-col items-center md:flex-row md:items-start" style={{ flex: 1 }}>
+                    {/* Step card */}
+                    <div className="flex flex-col items-center text-center px-3 md:px-4" style={{ flex: 1 }}>
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 dark:bg-white/[0.07]">
+                        {step.icon === "ban" && <ShieldBan className="h-6 w-6 text-red-500 dark:text-red-400" />}
+                        {step.icon === "funnel" && <Filter className="h-6 w-6 text-amber-500 dark:text-amber-400" />}
+                        {step.icon === "stop" && <CircleStop className="h-6 w-6 text-gray-500 dark:text-gray-400" />}
+                      </div>
+                      <p className="max-w-[220px] text-[14px] leading-[1.5] text-gray-600 dark:text-gray-400">
+                        {step.text}
+                      </p>
+                    </div>
+                    {/* Arrow between steps */}
+                    {i < caseStudy.closureChain!.length - 1 && (
+                      <>
+                        <ArrowRight className="my-1 hidden h-5 w-5 flex-shrink-0 text-gray-300 md:mt-4 md:block dark:text-gray-600" />
+                        <ChevronDown className="my-1 h-5 w-5 flex-shrink-0 rotate-0 text-gray-300 md:hidden dark:text-gray-600" />
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+        ) : caseStudy.closureReason && caseStudy.closureReason.length > 0 ? (
           <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
             <div className="rounded-2xl border border-gray-200 bg-gray-50 px-6 py-7 md:px-8 md:py-8 dark:border-white/10 dark:bg-gray-900">
               <h2 className="mb-[13px] text-[1.25rem] font-bold text-gray-900 dark:text-gray-100">
@@ -568,24 +610,29 @@ export const CaseLayout = memo(function CaseLayout({
               </div>
             </div>
           </FadeIn>
-        )}
+        ) : null}
 
         {/* ─── Learned ─── */}
         {caseStudy.learned.length > 0 && (
           <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
-            <div className="rounded-lg bg-amber-50/60 px-6 py-6 md:px-8 md:py-7 dark:bg-amber-900/10">
-              <h2 className="mb-[13px] flex items-center gap-2 text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
+            <div className="rounded-2xl bg-amber-50/60 px-6 py-6 md:px-8 md:py-7 dark:bg-amber-900/10">
+              <h2 className="mb-[21px] flex items-center gap-2 text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
                 <Lightbulb className="h-5 w-5 text-amber-500" />
                 Выводы
               </h2>
-              <div className={`space-y-[13px] ${cx.text}`}>
+              <div className={cx.text}>
                 {caseStudy.learned.map((item, index) => (
-                  <p
-                    key={index}
-                    className="text-base leading-[1.618] text-gray-600 dark:text-gray-400"
-                  >
-                    {item}
-                  </p>
+                  <div key={index}>
+                    {index > 0 && <div className="my-[18px] border-t border-amber-200/60 dark:border-amber-800/40" />}
+                    <div className="flex gap-4 md:gap-5">
+                      <span className="mt-[-2px] min-w-[32px] text-[1.625rem] font-black leading-none tracking-tight text-amber-300 dark:text-amber-700/80 select-none">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <p className="text-[0.9375rem] leading-[1.618] text-gray-600 dark:text-gray-400">
+                        {item}
+                      </p>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
