@@ -12,9 +12,34 @@ export function CasePage() {
   useEffect(() => {
     if (caseStudy) {
       document.title = `${caseStudy.title} — Михайличенко Андрей`;
+
+      const desc = document.querySelector('meta[name="description"]');
+      if (desc) desc.setAttribute("content", `Кейс: ${caseStudy.title}. ${caseStudy.niche}. ${caseStudy.role}`);
+
+      const canonical = document.querySelector('link[rel="canonical"]');
+      if (canonical) canonical.setAttribute("href", `https://andrey-mikhaylichenko.ru/case/${caseStudy.id}`);
+
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute("content", `${caseStudy.title} — Михайличенко Андрей`);
+
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc) ogDesc.setAttribute("content", `Кейс: ${caseStudy.title}. ${caseStudy.niche}.`);
+
+      const ogUrl = document.querySelector('meta[property="og:url"]');
+      if (ogUrl) ogUrl.setAttribute("content", `https://andrey-mikhaylichenko.ru/case/${caseStudy.id}`);
     }
     return () => {
       document.title = "Михайличенко Андрей — digital-маркетолог с техническим уклоном";
+      const desc = document.querySelector('meta[name="description"]');
+      if (desc) desc.setAttribute("content", "Михайличенко Андрей — digital-маркетолог с техническим уклоном. Портфолио и кейсы: performance-маркетинг, воронки, аналитика, digital-инфраструктура.");
+      const canonical = document.querySelector('link[rel="canonical"]');
+      if (canonical) canonical.setAttribute("href", "https://andrey-mikhaylichenko.ru/");
+      const ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.setAttribute("content", "Михайличенко Андрей — digital-маркетолог с техническим уклоном");
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc) ogDesc.setAttribute("content", "Портфолио и кейсы: performance-маркетинг, воронки, аналитика, digital-инфраструктура.");
+      const ogUrl = document.querySelector('meta[property="og:url"]');
+      if (ogUrl) ogUrl.setAttribute("content", "https://andrey-mikhaylichenko.ru/");
     };
   }, [caseStudy]);
 

@@ -1,4 +1,4 @@
-import { memo, type ReactNode, useEffect, useRef, useCallback, useState } from "react";
+import { memo, useEffect, useRef, useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Mail, CheckCircle2, Lightbulb, ChevronDown, ZoomIn, ShieldBan, Filter, CircleStop } from "lucide-react";
 import { HeroCase } from "./HeroCase";
@@ -11,7 +11,6 @@ import type { CaseStudy, FirstTestBlock } from "@/data/portfolioData";
 interface CaseLayoutProps {
   caseStudy: CaseStudy;
   nextCase?: CaseStudy;
-  children?: ReactNode;
 }
 
 /* ─── layout tokens ─── */
@@ -568,9 +567,9 @@ export const CaseLayout = memo(function CaseLayout({
               </h2>
               <div className="flex flex-col items-center gap-3 md:flex-row md:items-start md:gap-0">
                 {caseStudy.closureChain.map((step, i) => (
-                  <div key={i} className="flex flex-col items-center md:flex-row md:items-start" style={{ flex: 1 }}>
+                  <div key={i} className="flex flex-1 flex-col items-center md:flex-row md:items-start">
                     {/* Step card */}
-                    <div className="flex flex-col items-center text-center px-3 md:px-4" style={{ flex: 1 }}>
+                    <div className="flex flex-1 flex-col items-center text-center px-3 md:px-4">
                       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 dark:bg-white/[0.07]">
                         {step.icon === "ban" && <ShieldBan className="h-6 w-6 text-red-500 dark:text-red-400" />}
                         {step.icon === "funnel" && <Filter className="h-6 w-6 text-amber-500 dark:text-amber-400" />}

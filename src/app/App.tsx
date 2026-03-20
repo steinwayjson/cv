@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Header } from "@/app/components/Header";
 import { Footer } from "@/app/components/Footer";
+import { ErrorBoundary } from "@/app/components/ErrorBoundary";
 import { HomePage } from "@/app/pages/HomePage";
 
 const CasePage = lazy(() =>
@@ -52,6 +53,7 @@ export default function App() {
       <div className="flex min-h-screen flex-col bg-white transition-colors duration-300 dark:bg-gray-950">
         <Header />
         <main id="main-content" className="flex-1">
+          <ErrorBoundary>
           <Suspense fallback={<PageSkeleton />}>
             <Routes>
               <Route path="/" element={<HomePage />} />
@@ -59,6 +61,7 @@ export default function App() {
               <Route path="*" element={<HomePage />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
         </main>
         <Footer />
       </div>

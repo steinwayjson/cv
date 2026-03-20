@@ -63,7 +63,7 @@ export const ImageGallery = memo(function ImageGallery({
               <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                 <div>
                   {gallery.pairLabels?.[0] && (
-                    <p className="mb-2 text-[13px] font-medium text-gray-500">{gallery.pairLabels[0]}</p>
+                    <p className="mb-2 text-[13px] font-medium text-gray-500 dark:text-gray-400">{gallery.pairLabels[0]}</p>
                   )}
                   <BeforeAfterPreview
                     before={gallery.items[0]}
@@ -72,7 +72,7 @@ export const ImageGallery = memo(function ImageGallery({
                 </div>
                 <div>
                   {gallery.pairLabels?.[1] && (
-                    <p className="mb-2 text-[13px] font-medium text-gray-500">{gallery.pairLabels[1]}</p>
+                    <p className="mb-2 text-[13px] font-medium text-gray-500 dark:text-gray-400">{gallery.pairLabels[1]}</p>
                   )}
                   <BeforeAfterPreview
                     before={gallery.items[2]}
@@ -123,8 +123,7 @@ export const ImageGallery = memo(function ImageGallery({
                       alt={item.caption || "Открыть изображение"}
                       loading="lazy"
                       decoding="async"
-                      className="h-[420px] max-h-[60vh] w-full object-cover bg-gray-100 transition-transform duration-300 group-hover:scale-[1.02] md:h-[480px] md:max-h-none dark:bg-gray-800"
-                      style={{ aspectRatio: "16/9" }}
+                      className="h-[420px] max-h-[60vh] w-full object-cover bg-gray-100 transition-transform duration-300 group-hover:scale-[1.02] md:h-[480px] md:max-h-none dark:bg-gray-800 aspect-video"
                     />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
                       <ZoomIn className="h-10 w-10 text-white opacity-0 transition-opacity group-hover:opacity-100" />
@@ -166,7 +165,7 @@ export const ImageGallery = memo(function ImageGallery({
                       Результат
                     </p>
                     <div className="flex items-baseline gap-2">
-                      <ArrowRight className="h-4 w-4 flex-shrink-0 text-emerald-500" style={{ marginTop: "2px" }} />
+                      <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
                       <p className="text-[1.25rem] font-bold leading-tight text-gray-900 dark:text-gray-100">
                         {gallery.result.value}
                       </p>
@@ -191,7 +190,7 @@ export const ImageGallery = memo(function ImageGallery({
                     <div className="space-y-2.5">
                       {gallery.results.map((r, ri) => (
                         <div key={ri} className="flex items-baseline gap-2">
-                          <ArrowRight className="h-4 w-4 flex-shrink-0 text-emerald-500" style={{ marginTop: "2px" }} />
+                          <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
                           <div>
                             <span className="text-[1.1rem] font-bold leading-tight text-gray-900 dark:text-gray-100">{r.value}</span>
                             {r.note && <span className="ml-2 text-[13px] font-semibold text-emerald-600 dark:text-emerald-400">{r.note}</span>}
