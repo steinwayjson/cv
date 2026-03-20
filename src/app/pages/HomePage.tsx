@@ -56,7 +56,7 @@ export function HomePage() {
                   <ArrowDown className="h-3.5 w-3.5" />
                 </a>
                 <a
-                  href="/resume.pdf"
+                  href="/Mikhaylichenko_Andrey_CV.pdf"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-gray-500 transition-colors hover:text-gray-900 md:w-auto md:justify-start md:border md:border-gray-200 md:bg-white md:text-gray-700 md:hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:md:border-gray-700 dark:md:bg-gray-900 dark:md:text-gray-300 dark:md:hover:border-gray-600"
