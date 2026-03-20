@@ -28,6 +28,21 @@ export const ImageModal = memo(function ImageModal({
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < images.length - 1;
   const dialogRef = useRef<HTMLDivElement>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStart.current) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    touchStart.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < 0 && hasNext) onNavigate(currentIndex + 1);
+    if (dx > 0 && hasPrev) onNavigate(currentIndex - 1);
+  }, [hasNext, hasPrev, onNavigate, currentIndex]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -72,67 +87,73 @@ export const ImageModal = memo(function ImageModal({
       aria-modal="true"
       aria-label={`Просмотр изображения ${currentIndex + 1} из ${images.length}`}
       tabIndex={-1}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 outline-none"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 outline-none"
       onClick={onClose}
     >
       {/* Close */}
       <button
         onClick={onClose}
         aria-label="Закрыть"
-        className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+        className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
       >
         <X className="h-6 w-6" aria-hidden="true" />
       </button>
 
-      {/* Prev */}
-      {hasPrev && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onNavigate(currentIndex - 1);
-          }}
-          aria-label="Предыдущее изображение"
-          className="absolute left-4 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
-        >
-          <ChevronLeft className="h-6 w-6" aria-hidden="true" />
-        </button>
-      )}
-
-      {/* Image */}
+      {/* Image area */}
       <div
-        className="flex max-h-[90vh] max-w-[90vw] flex-col items-center"
+        className="flex flex-1 max-w-[90vw] items-center justify-center"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         <img
           src={current.src}
           alt={current.caption ?? ""}
           decoding="async"
-          className="max-h-[85vh] max-w-full rounded-lg object-contain"
+          className="max-h-[75vh] max-w-full rounded-lg object-contain"
         />
-        {current.caption && (
-          <p className="mt-3 text-center text-sm text-white/80">
-            {current.caption}
-          </p>
-        )}
-        {images.length > 1 && (
-          <p className="mt-1 text-xs text-white/50">
-            {currentIndex + 1} / {images.length}
-          </p>
-        )}
       </div>
 
-      {/* Next */}
-      {hasNext && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onNavigate(currentIndex + 1);
-          }}
-          aria-label="Следующее изображение"
-          className="absolute right-4 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
+      {/* Bottom bar: caption + navigation */}
+      {images.length > 1 && (
+        <div
+          className="flex w-full items-center justify-between px-4 pb-6 pt-3"
+          onClick={(e) => e.stopPropagation()}
         >
-          <ChevronRight className="h-6 w-6" aria-hidden="true" />
-        </button>
+          <button
+            onClick={() => hasPrev && onNavigate(currentIndex - 1)}
+            aria-label="Предыдущее изображение"
+            className={`rounded-full bg-white/10 p-3 text-white transition-opacity hover:bg-white/20 ${hasPrev ? "" : "pointer-events-none opacity-30"}`}
+          >
+            <ChevronLeft className="h-6 w-6" aria-hidden="true" />
+          </button>
+
+          <div className="flex flex-col items-center gap-1 min-w-0 px-3">
+            {current.caption && (
+              <p className="text-center text-sm leading-snug text-white/80 line-clamp-2">
+                {current.caption}
+              </p>
+            )}
+            <p className="text-xs text-white/50">
+              {currentIndex + 1} / {images.length}
+            </p>
+          </div>
+
+          <button
+            onClick={() => hasNext && onNavigate(currentIndex + 1)}
+            aria-label="Следующее изображение"
+            className={`rounded-full bg-white/10 p-3 text-white transition-opacity hover:bg-white/20 ${hasNext ? "" : "pointer-events-none opacity-30"}`}
+          >
+            <ChevronRight className="h-6 w-6" aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      {/* Single image caption (no nav bar) */}
+      {images.length <= 1 && current.caption && (
+        <div className="pb-6 pt-3 px-4" onClick={(e) => e.stopPropagation()}>
+          <p className="text-center text-sm text-white/80">{current.caption}</p>
+        </div>
       )}
     </div>,
     document.body

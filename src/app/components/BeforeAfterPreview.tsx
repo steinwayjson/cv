@@ -49,7 +49,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       isDragging.current = true;
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      containerRef.current?.setPointerCapture(e.pointerId);
       updatePosition(e.clientX);
     },
     [updatePosition]
@@ -80,11 +80,12 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
           aria-valuemax={100}
           aria-valuenow={50}
           tabIndex={0}
-          className="relative w-full cursor-col-resize select-none overflow-hidden rounded-xl bg-gray-100 dark:bg-gray-800"
+          className="relative w-full cursor-col-resize select-none overflow-hidden rounded-xl bg-gray-100 touch-none dark:bg-gray-800"
           style={{ aspectRatio: "4/3" }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           onKeyDown={(e) => {
             const divider = dividerRef.current;
             if (!divider) return;

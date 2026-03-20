@@ -16,7 +16,7 @@ export const CaseCard = memo(function CaseCard({ caseStudy, featured }: CaseCard
       to={`/case/${caseStudy.id}`}
       className="group block overflow-hidden rounded-xl border border-gray-100 bg-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm md:rounded-2xl dark:border-white/8 dark:bg-gray-900"
     >
-      <div className={`relative overflow-hidden bg-gray-100 aspect-[16/9] dark:bg-gray-800 ${featured ? 'md:aspect-[2.8/1]' : 'md:aspect-[2.4/1]'}`}>
+      <div className="relative overflow-hidden bg-gray-100 aspect-[16/9] dark:bg-gray-800">
         <img
           src={caseStudy.image}
           alt={caseStudy.title}
