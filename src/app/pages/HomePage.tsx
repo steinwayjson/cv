@@ -222,7 +222,7 @@ export function HomePage() {
             </div>
           </div>
           {personalInfo.approach.summary && (
-            <p className="mt-[34px] max-w-[700px] text-[15px] leading-[1.618] text-gray-500 dark:text-gray-400">
+            <p className="mt-[34px] max-w-[700px] text-[15px] italic leading-[1.618] text-gray-500 dark:text-gray-400">
               {personalInfo.approach.summary}
             </p>
           )}
