@@ -21,8 +21,13 @@ export const Header = memo(function Header() {
         Перейти к содержимому
       </a>
       <div className="mx-auto flex h-[55px] max-w-[1140px] items-center justify-between px-5 sm:px-8">
-        <Link to="/" className="text-[15px] font-bold text-gray-900 dark:text-gray-100">
-          {personalInfo.name}
+        <Link to="/" aria-label="На главную" className="flex items-center gap-2.5 group">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-[13px] font-bold text-white transition-colors group-hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:group-hover:bg-gray-200">
+            MA
+          </span>
+          <span className="hidden text-[15px] font-bold text-gray-900 sm:block dark:text-gray-100">
+            {personalInfo.name}
+          </span>
         </Link>
         <nav aria-label="Основная навигация" className="flex items-center gap-5">
           {isHome ? (

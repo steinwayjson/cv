@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from "react";
+import { memo } from "react";
 import { MetricCard } from "./MetricCard";
 
 interface KPI {
@@ -10,7 +10,6 @@ interface MetricsGridProps {
   items: KPI[];
   variant?: "hero" | "light" | "dark";
   tone?: "neutral" | "success" | "warning";
-  children?: ReactNode;
 }
 
 /**
@@ -24,11 +23,17 @@ export const MetricsGrid = memo(function MetricsGrid({
 }: MetricsGridProps) {
   if (items.length === 0) return null;
 
+  const colsMap: Record<number, string> = {
+    1: "grid-cols-1 sm:grid-cols-1",
+    2: "grid-cols-1 sm:grid-cols-2",
+    3: "grid-cols-1 sm:grid-cols-3",
+  };
+
   const cols =
     variant === "hero"
       ? "grid-cols-2 lg:grid-cols-4"
       : items.length <= 3
-        ? `grid-cols-1 sm:grid-cols-${items.length}`
+        ? colsMap[items.length] ?? "grid-cols-1 sm:grid-cols-3"
         : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
 
   return (

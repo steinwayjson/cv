@@ -154,7 +154,7 @@ export function HomePage() {
                       className="flex gap-2.5 text-[14px] leading-[1.618] text-gray-500 dark:text-gray-500"
                     >
                       <span className="mt-[8px] h-1 w-1 flex-shrink-0 rounded-full bg-gray-300 dark:bg-gray-600" />
-                      <span dangerouslySetInnerHTML={{ __html: bullet }} />
+                      {bullet}
                     </li>
                   ))}
                 </ul>

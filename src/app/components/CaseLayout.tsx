@@ -6,12 +6,11 @@ import { ImageGallery } from "./ImageGallery";
 import { ImageModal } from "./ImageModal";
 import { ContactModal } from "./ContactModal";
 import { FadeIn } from "./FadeIn";
-import type { CaseStudy, PersonalInfo, FirstTestBlock, ClosureStep } from "@/data/portfolioData";
+import type { CaseStudy, FirstTestBlock } from "@/data/portfolioData";
 
 interface CaseLayoutProps {
   caseStudy: CaseStudy;
   nextCase?: CaseStudy;
-  personalInfo: PersonalInfo;
   children?: ReactNode;
 }
 
@@ -154,7 +153,7 @@ function ContextAndApproachSection({
                         return (
                           <div
                             key={i}
-                            className="relative flex min-h-[80px] flex-col justify-center overflow-hidden rounded-lg border border-amber-100 bg-amber-50/40 px-4 py-3 pl-5"
+                            className="relative flex min-h-[80px] flex-col justify-center overflow-hidden rounded-lg border border-amber-100 bg-amber-50/40 px-4 py-3 pl-5 dark:border-amber-900/30 dark:bg-amber-900/10"
                           >
                             <span className="absolute left-0 top-0 h-full w-[3px] rounded-l-lg bg-amber-300/70 dark:bg-amber-500/50" />
                             <div className="text-[1.25rem] font-bold leading-tight text-gray-900 dark:text-gray-100">
@@ -256,13 +255,14 @@ function ContextAndApproachSection({
 export const CaseLayout = memo(function CaseLayout({
   caseStudy,
   nextCase,
-  personalInfo,
 }: CaseLayoutProps) {
   /* scroll progress — direct DOM update, no re-renders */
   const progressRef = useRef<HTMLDivElement>(null);
   const rafId = useRef(0);
   const [analyticsLightbox, setAnalyticsLightbox] = useState<{ index: number } | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
+
+  const visibleGalleries = caseStudy.galleries?.filter((g) => !g.hidden);
 
   const updateProgress = useCallback(() => {
     const bar = progressRef.current;
@@ -319,17 +319,14 @@ export const CaseLayout = memo(function CaseLayout({
         )}
 
         {/* ─── Galleries / Before-After ─── */}
-        {(() => {
-          const visibleGalleries = caseStudy.galleries?.filter((g) => !g.hidden);
-          return visibleGalleries && visibleGalleries.length > 0 && (
+        {visibleGalleries && visibleGalleries.length > 0 && (
             <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
               <h2 className="mb-[34px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
                 Реализация
               </h2>
               <ImageGallery galleries={visibleGalleries} />
             </FadeIn>
-          );
-        })()}
+        )}
 
         {/* ─── Metrics + Analytics (combined) ─── */}
         {(caseStudy.organicComparison || (caseStudy.analyticsScreenshots && caseStudy.analyticsScreenshots.items.length > 0)) && (
@@ -344,8 +341,8 @@ export const CaseLayout = memo(function CaseLayout({
 
               {/* Compact comparison table */}
               {caseStudy.organicComparison && (
-                <div className="mb-8 overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900">
-                  <div className="grid grid-cols-[1fr_80px_80px_64px] border-b border-gray-100 bg-gray-50/70 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:border-white/8 dark:bg-gray-800/50 dark:text-gray-500">
+                <div className="mb-8 overflow-x-auto overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900">
+                  <div className="grid min-w-[400px] grid-cols-[1fr_80px_80px_64px] border-b border-gray-100 bg-gray-50/70 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:border-white/8 dark:bg-gray-800/50 dark:text-gray-500">
                     <span>Показатель</span>
                     <span className="text-right">До</span>
                     <span className="text-right">После</span>
@@ -354,14 +351,14 @@ export const CaseLayout = memo(function CaseLayout({
                   {caseStudy.organicComparison.items.map((item, i) => (
                     <div
                       key={i}
-                      className={`grid grid-cols-[1fr_80px_80px_64px] items-center px-5 py-3.5 ${
+                      className={`grid min-w-[400px] grid-cols-[1fr_80px_80px_64px] items-center px-5 py-3.5 ${
                         i < caseStudy.organicComparison!.items.length - 1 ? "border-b border-gray-100 dark:border-white/8" : ""
                       }`}
                     >
                       <span className="text-[14px] font-medium text-gray-700 dark:text-gray-300">{item.label}</span>
                       <span className="text-right text-[14px] text-gray-400 dark:text-gray-500">{item.before}</span>
                       <span className="text-right text-[14px] font-semibold text-gray-900 dark:text-gray-100">{item.after}</span>
-                      <span className="text-right text-[13px] font-bold text-emerald-600">{item.multiplier}</span>
+                      <span className="text-right text-[13px] font-bold text-emerald-600 dark:text-emerald-400">{item.multiplier}</span>
                     </div>
                   ))}
                 </div>
@@ -396,7 +393,7 @@ export const CaseLayout = memo(function CaseLayout({
                       >
                         <img
                           src={item.src}
-                          alt={item.caption ?? ""}
+                          alt={item.caption || "Скриншот аналитики"}
                           className="w-full object-cover"
                           loading="lazy"
                           decoding="async"
@@ -503,7 +500,7 @@ export const CaseLayout = memo(function CaseLayout({
               <h2 className="mb-[34px] text-[1.625rem] font-bold text-white">
                 Бизнес-эффект
               </h2>
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 md:gap-3.5">
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 md:gap-3.5">
                 {caseStudy.businessEffect.map((kpi, i) => (
                   <div key={i} className="rounded-xl bg-white/[0.07] px-5 py-5">
                     <p className="text-[1.0625rem] font-bold leading-snug text-white md:text-[1.125rem]">
@@ -692,7 +689,7 @@ export const CaseLayout = memo(function CaseLayout({
       {/* ─── Sticky CTA (bottom-right) ─── */}
       <button
         onClick={() => setContactOpen(true)}
-        aria-label="Написать письмо"
+        aria-label="Связаться"
         className="fixed bottom-6 right-6 z-50 flex h-12 items-center gap-2 rounded-full bg-gray-900 px-5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-gray-800 hover:shadow-xl md:bottom-8 md:right-8 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
       >
         <Mail className="h-4 w-4" aria-hidden="true" />

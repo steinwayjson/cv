@@ -1,5 +1,6 @@
 import { useParams, Navigate } from "react-router-dom";
-import { caseStudies, personalInfo } from "@/data/portfolioData";
+import { useEffect } from "react";
+import { caseStudies } from "@/data/portfolioData";
 import { CaseLayout } from "@/app/components/CaseLayout";
 
 export function CasePage() {
@@ -8,13 +9,21 @@ export function CasePage() {
   const caseStudy = caseStudies[caseIdx];
   const nextCase = caseStudies[(caseIdx + 1) % caseStudies.length];
 
+  useEffect(() => {
+    if (caseStudy) {
+      document.title = `${caseStudy.title} — Михайличенко Андрей`;
+    }
+    return () => {
+      document.title = "Михайличенко Андрей — digital-маркетолог с техническим уклоном";
+    };
+  }, [caseStudy]);
+
   if (!caseStudy) return <Navigate to="/" replace />;
 
   return (
     <CaseLayout
       caseStudy={caseStudy}
       nextCase={nextCase}
-      personalInfo={personalInfo}
     />
   );
 }

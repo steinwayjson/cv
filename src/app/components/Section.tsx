@@ -18,13 +18,13 @@ interface SectionProps {
 
 const bgMap = {
   white: "",
-  gray: "bg-gray-50",
-  dark: "bg-gray-900",
+  gray: "bg-gray-50 dark:bg-gray-900/50",
+  dark: "bg-gray-900 dark:bg-gray-800",
 } as const;
 
 const titleColor = {
-  white: "text-gray-900",
-  gray: "text-gray-900",
+  white: "text-gray-900 dark:text-gray-100",
+  gray: "text-gray-900 dark:text-gray-100",
   dark: "text-white",
 } as const;
 

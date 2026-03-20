@@ -174,7 +174,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
 
         {/* Description below preview */}
         {description && (
-          <p className="text-sm leading-relaxed text-gray-500">{description}</p>
+          <p className="text-sm leading-relaxed text-gray-500 dark:text-gray-400">{description}</p>
         )}
       </div>
 

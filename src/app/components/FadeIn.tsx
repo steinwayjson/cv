@@ -23,11 +23,9 @@ export const FadeIn = memo(function FadeIn({ children, className = "", as: Tag =
           if (delay) {
             timeoutId = setTimeout(() => {
               el.classList.add("is-visible");
-              el.style.willChange = "auto";
             }, delay);
           } else {
             el.classList.add("is-visible");
-            el.style.willChange = "auto";
           }
           observer.unobserve(el);
         }
@@ -47,10 +45,7 @@ export const FadeIn = memo(function FadeIn({ children, className = "", as: Tag =
       ref={ref as React.RefObject<never>}
       id={id}
       className={`fade-section ${className}`}
-      style={{
-        willChange: "opacity, transform",
-        ...(delay ? { transitionDelay: `${delay}ms` } : {}),
-      }}
+      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
     >
       {children}
     </Tag>

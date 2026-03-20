@@ -92,7 +92,7 @@ export const ImageGallery = memo(function ImageGallery({
                   >
                     <img
                       src={item.src}
-                      alt={item.caption ?? ""}
+                      alt={item.caption || "Открыть изображение"}
                       loading="lazy"
                       decoding="async"
                       className="h-[240px] w-full object-cover bg-gray-100 transition-transform duration-300 group-hover:scale-105 md:h-[320px] dark:bg-gray-800"
@@ -120,7 +120,7 @@ export const ImageGallery = memo(function ImageGallery({
                   >
                     <img
                       src={item.src}
-                      alt={item.caption ?? ""}
+                      alt={item.caption || "Открыть изображение"}
                       loading="lazy"
                       decoding="async"
                       className="h-[420px] max-h-[60vh] w-full object-cover bg-gray-100 transition-transform duration-300 group-hover:scale-[1.02] md:h-[480px] md:max-h-none dark:bg-gray-800"

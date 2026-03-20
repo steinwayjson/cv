@@ -170,16 +170,15 @@ export interface PersonalInfo {
 // =====================================
 export const personalInfo: PersonalInfo = {
   name: "Михайличенко Андрей",
-  title: "Системный digital-маркетолог",
-  bio: "Больше 5 лет в digital.\nПомогаю улучшать конверсию и эффективность digital-каналов: от трафика до сайта и воронки. Работаю на стыке маркетинга, аналитики и технической реализации: привлекаю трафик и улучшаю продуктовую часть — сайт, структуру, точки конверсии.",
+  title: "Digital-маркетолог c техническим уклоном",
+  bio: "\nПомогаю улучшать конверсию и эффективность digital-каналов: от трафика до сайта и воронки. Работаю на стыке маркетинга, аналитики и технической реализации: привлекаю трафик и улучшаю продуктовую часть — сайт, структуру, точки конверсии.",
   email: "hello.mikhaylichenko@gmail.com",
   phone: "+7 (918) 597-57-14",
   location: "Ростов-на-Дону, Россия",
-  avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+  avatar: "/images/avatar.jpg",
   socialLinks: [
-    { label: "Telegram", href: " #" },
-    { label: "MAX", href: " # " },
-    { label: "LinkedIn", href: " # " },
+    { label: "Telegram", href: "https://t.me/steinwayjson" },
+    { label: "MAX", href: "https://max.ru/u/f9LHodD0cOJaOrKfEt-E8DUm40SdAIJxULy6xP8Jp_IC5EW6YXcJWbPIazc" },
   ],
   skillGroups: [
     {
@@ -228,17 +227,27 @@ export const personalInfo: PersonalInfo = {
       ],
     },
     {
+      company: "Фриланс",
+      position: "Digital-маркетолог",
+      period: "2022 — 2024",
+      summary: "Проектная работа, самообучение и развитие технического стека.",
+      bullets: [
+        "Ведение клиентских проектов по привлечению и работе с сайтами",
+        "Разработка и запуск воронок для инфопродуктов",
+        "Изучал фронтенд и расширял технический стек: вёрстка, JavaScript, WordPress, Telegram-боты",
+      ],
+    },
+    {
       company: "KleverLab",
       position: "Digital-маркетолог (Performance)",
       period: "2019 — 2022",
       summary: "B2C-проекты: недвижимость, медицина, e-commerce, сервисные компании.",
       bullets: [
-        "Самостоятельное ведение performance-направления по клиентским проектам (VK, myTarget, FB Ads, Я.Директ)",
-        "A/B-тестирование креативов и офферов",
+        "Самостоятельное ведение performance-направления по ~18 клиентским проектам (VK, myTarget, FB Ads, Я.Директ), бюджеты до 300 000 ₽/мес",
+        "A/B-тестирование креативов и офферов; разбор посадочных, корректировки для клиентов, разработка квизов",
         "Работа над улучшением конверсии посадочных страниц и логики воронки",
-        "Интеграция рекламных кабинетов с CRM и аналитикой (Яндекс.Метрика, Google Analytics, GTM)",
+        "Интеграция рекламных кабинетов с CRM и аналитикой (Яндекс.Метрика, Google Analytics, GTM), подготовка отчётов для клиентов",
         "Участие в проектах по продвижению на Wildberries",
-        "Разработка и запуск воронок для инфопродуктов", 
       ],
     },
   ],
@@ -247,10 +256,6 @@ export const personalInfo: PersonalInfo = {
 // =====================================
 // Кейсы
 // =====================================
-export { mskDeveloperCase } from "@/data/cases/msk-developer";
-export { revitaleClinicCase } from "@/data/cases/revitale-clinic";
-export { meEsotericsCase } from "@/data/cases/me-esoterics";
-
 import { mskDeveloperCase } from "@/data/cases/msk-developer";
 import { revitaleClinicCase } from "@/data/cases/revitale-clinic";
 import { meEsotericsCase } from "@/data/cases/me-esoterics";

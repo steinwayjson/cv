@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#111827"/>
+  <text x="100" y="260" font-family="Inter, system-ui, sans-serif" font-size="52" font-weight="700" fill="#fff">Михайличенко Андрей</text>
+  <text x="100" y="330" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="500" fill="#9CA3AF">Digital-маркетолог с техническим уклоном</text>
+  <text x="100" y="400" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="400" fill="#6B7280">Портфолио и кейсы: performance, growth, воронки, digital-инфраструктура</text>
+  <rect x="100" y="460" width="64" height="4" rx="2" fill="#F59E0B"/>
+  <text x="100" y="510" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="400" fill="#4B5563">andrey-mikhaylichenko.ru</text>
+</svg>

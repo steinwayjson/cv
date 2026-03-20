@@ -7,6 +7,7 @@ export const revitaleClinicCase: CaseStudy = {
   subtitle: "Как улучшить показатели сайта без смены платформы, бюджета на разработку и CRM",
   comparisonPeriod: "Сравнение: 01.01.2022–30.06.2022 → 01.01.2025–30.06.2025, органический трафик",
   niche: "Медицина / Медицинский центр",
+  heroNote: "Период работы: 2023–2026. Сравнение полугодий органического трафика за 3 года.",
   image: "/images/revital-preview.webp",
   tags: ["Редизайн", "SEO", "Я.Директ", "VK Ads"],
   tools: ["WordPress", "Я.Директ", "VK Ads", "Sanler", "Я.Метрика", "Medflex"],
@@ -181,7 +182,7 @@ export const revitaleClinicCase: CaseStudy = {
     title: "Данные из Яндекс.Метрики",
     subtitle: "Сравнение полугодий органического трафика: 01.01.2022–30.06.2022 → 01.01.2025–30.06.2025.",
     items: [
-      { src: "/images/revital-ym_2024.webp", caption: "Отправки формы: 379, клики по номеру: 126" },
+      { src: "/images/revital-ym_2022.webp", caption: "Отправки формы: 379, клики по номеру: 126" },
       { src: "/images/revital-ym_2025.webp", caption: "Отправки формы: 738, клики по номеру: 721" },
     ],
   },
