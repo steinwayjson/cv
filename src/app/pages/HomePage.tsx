@@ -221,9 +221,11 @@ export function HomePage() {
               </ul>
             </div>
           </div>
-          <p className="mt-[34px] max-w-[700px] text-[15px] leading-[1.618] text-gray-500 dark:text-gray-400">
-            Интересны проекты, где могу влиять на рост, воронку и цифровую инфраструктуру.
-          </p>
+          {personalInfo.approach.summary && (
+            <p className="mt-[34px] max-w-[700px] text-[15px] leading-[1.618] text-gray-500 dark:text-gray-400">
+              {personalInfo.approach.summary}
+            </p>
+          )}
         </div>
       </FadeIn>
     </div>
