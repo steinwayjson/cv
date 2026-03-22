@@ -13,15 +13,15 @@ interface CaseLayoutProps {
   nextCase?: CaseStudy;
 }
 
-/* ─── layout tokens ─── */
+/* ─── Токены разметки ─── */
 const cx = {
   outer: "mx-auto max-w-[1140px] px-5 sm:px-8",
   text: "max-w-[700px]",
-  /** Vertical rhythm: Fibonacci 55/89 */
+  /** Вертикальный ритм секций */
   sectionY: "py-[55px] md:py-[89px]",
 };
 
-/* ─── Approach card (with mobile accordion) ─── */
+/* ─── Карточка подхода (аккордеон на мобилке) ─── */
 const MOBILE_VISIBLE_ITEMS = 4;
 
 interface StrategyGroupData {
@@ -41,17 +41,17 @@ function StrategyCard({ group }: { group: StrategyGroupData }) {
         ? "border-gray-100 bg-gray-50/60 opacity-85 dark:border-gray-800 dark:bg-gray-800/40"
         : "border-gray-200/80 bg-white md:hover:-translate-y-1 md:hover:shadow-md dark:border-white/10 dark:bg-gray-900"
     }`}>
-      {/* Label */}
+      {/* Метка */}
       {group.label && (
         <span className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">
           {group.label}
         </span>
       )}
-      {/* Title */}
+      {/* Заголовок */}
       <h3 className="mb-[13px] text-[1.25rem] font-semibold leading-snug text-gray-900 dark:text-gray-100">
         {group.title}
       </h3>
-      {/* Items */}
+      {/* Пункты */}
       <ul className="flex-1 space-y-2.5">
         {group.items.map((item, ii) => {
           const isLast = ii >= group.items.length - 2;
@@ -71,7 +71,7 @@ function StrategyCard({ group }: { group: StrategyGroupData }) {
           );
         })}
       </ul>
-      {/* Mobile expand toggle */}
+      {/* Раскрыть на мобилке */}
       {hasMore && (
         <button
           type="button"
@@ -112,7 +112,7 @@ function ContextAndApproachSection({
 
   return (
     <>
-      {/* ── Контекст + Исходные данные (белый фон) ── */}
+      {/* ── Контекст + исходные данные ── */}
       {(context || hasMetrics) && (
         <div className="border-t border-gray-100 py-[34px] md:py-[55px] dark:border-white/8">
           <div className={cx.outer}>
@@ -185,7 +185,7 @@ function ContextAndApproachSection({
         </div>
       )}
 
-      {/* ── Подход + карточки стратегий (серый фон) ── */}
+      {/* ── Подход + карточки стратегий ── */}
       {(approach || activeGroups.length > 0) && (
         <section className="bg-gray-50/80 py-[34px] md:py-[55px] dark:bg-gray-900/60">
           <div className={cx.outer}>
@@ -200,7 +200,7 @@ function ContextAndApproachSection({
               </div>
             )}
 
-            {/* First Test — after approach text */}
+            {/* Первый тест — до подхода */}
             {firstTest && (
               <div className="mb-6 rounded-2xl border border-amber-100 bg-amber-50/50 px-6 py-7 md:px-8 md:py-8 dark:border-amber-900/30 dark:bg-amber-900/10">
                 <h3 className="mb-[13px] text-[1.25rem] font-bold text-gray-900 dark:text-gray-100">
@@ -233,29 +233,14 @@ function ContextAndApproachSection({
 }
 
 /**
- * Unified case page layout.
- * All case pages use this component — no custom markup per case.
- *
- * Visual hierarchy (top→bottom):
- * 1. Hero (title + KPIs)
- * 2. Tools
- * 3. Role + Context
- * 4. Starting Point (gray bg, card-style)
- * 5. Challenge (inline intro text)
- * 6. Strategy (columns)
- * 7. Galleries / Before-After
- * 8. Results
- * 9. Organic Comparison (if present)
- * 10. Business Effect (dark)
- * 11. Growth Plan (if present)
- * 12. Learned
- * 13. CTA
+ * Общий шаблон страницы кейса.
+ * Все кейсы рендерятся через этот компонент — никакой кастомной разметки.
  */
 export const CaseLayout = memo(function CaseLayout({
   caseStudy,
   nextCase,
 }: CaseLayoutProps) {
-  /* scroll progress — direct DOM update, no re-renders */
+  /* Полоса прогресса скролла — обновляется через DOM напрямую */
   const progressRef = useRef<HTMLDivElement>(null);
   const rafId = useRef(0);
   const [analyticsLightbox, setAnalyticsLightbox] = useState<{ index: number } | null>(null);
@@ -286,15 +271,15 @@ export const CaseLayout = memo(function CaseLayout({
 
   return (
     <div className="min-h-screen bg-white transition-colors duration-300 dark:bg-gray-950">
-      {/* Scroll progress bar */}
+      {/* Полоса прогресса */}
       <div ref={progressRef} className="scroll-progress" />
 
-      {/* ═══════════  1. HERO  ═══════════ */}
+      {/* ═══════════  Шапка кейса  ═══════════ */}
       <HeroCase caseStudy={caseStudy} />
 
-      {/* ═══════════  CONTENT  ═══════════ */}
+      {/* ═══════════  Содержимое  ═══════════ */}
       <article>
-        {/* ─── Role ─── */}
+        {/* ─── Роль ─── */}
         <FadeIn className={`py-[34px] md:py-[55px] ${cx.outer}`} as="section">
           <p className="mb-[13px] text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">
             Роль
@@ -305,7 +290,7 @@ export const CaseLayout = memo(function CaseLayout({
         </FadeIn>
 
 
-        {/* ─── Context & Approach (combined) ─── */}
+        {/* ─── Контекст и подход ─── */}
         {(caseStudy.startingPoint?.length || caseStudy.strategyGroups.length > 0) && (
           <ContextAndApproachSection
             startingPoint={caseStudy.startingPoint}
@@ -317,7 +302,7 @@ export const CaseLayout = memo(function CaseLayout({
           />
         )}
 
-        {/* ─── Galleries / Before-After ─── */}
+        {/* ─── Галереи / до-после ─── */}
         {visibleGalleries && visibleGalleries.length > 0 && (
             <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
               <h2 className="mb-[34px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
@@ -327,7 +312,7 @@ export const CaseLayout = memo(function CaseLayout({
             </FadeIn>
         )}
 
-        {/* ─── Metrics + Analytics (combined) ─── */}
+        {/* ─── Метрики и аналитика ─── */}
         {(caseStudy.organicComparison || (caseStudy.analyticsScreenshots && caseStudy.analyticsScreenshots.items.length > 0)) && (
           <FadeIn as="section" className={`${cx.sectionY}`}>
             <div className={cx.outer}>
@@ -338,7 +323,7 @@ export const CaseLayout = memo(function CaseLayout({
                 <p className="mb-7 text-sm text-gray-400">{caseStudy.organicComparison.period}</p>
               )}
 
-              {/* Compact comparison table */}
+              {/* Таблица сравнения */}
               {caseStudy.organicComparison && (
                 <div className="mb-8 overflow-x-auto overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900">
                   <div className="grid min-w-[400px] grid-cols-[1fr_80px_80px_64px] border-b border-gray-100 bg-gray-50/70 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:border-white/8 dark:bg-gray-800/50 dark:text-gray-500">
@@ -363,14 +348,14 @@ export const CaseLayout = memo(function CaseLayout({
                 </div>
               )}
 
-              {/* Table note */}
+              {/* Сноска к таблице */}
               {caseStudy.organicComparison?.note && (
                 <p className="mb-8 -mt-5 text-[12px] leading-[1.618] text-gray-400 dark:text-gray-500">
                   {caseStudy.organicComparison.note}
                 </p>
               )}
 
-              {/* Analytics screenshots — grid, no scroll */}
+              {/* Скриншоты аналитики */}
               {caseStudy.analyticsScreenshots && caseStudy.analyticsScreenshots.items.length > 0 && (
                 <>
                   <p className="mb-4 text-[13px] leading-relaxed text-gray-400 dark:text-gray-500">
@@ -414,7 +399,7 @@ export const CaseLayout = memo(function CaseLayout({
           </FadeIn>
         )}
 
-        {/* ─── Results ─── */}
+        {/* ─── Результаты ─── */}
         {caseStudy.showResults !== false && <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
           <h2 className="mb-[8px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
             Результат
@@ -452,7 +437,7 @@ export const CaseLayout = memo(function CaseLayout({
           )}
         </FadeIn>}
 
-        {/* ─── Anti-case ─── */}
+        {/* ─── Антикейс ─── */}
         {caseStudy.antiCase && caseStudy.showAntiCase !== false && (
           <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
             <div className="rounded-2xl border border-red-100 bg-red-50/60 px-6 py-8 md:px-8 md:py-10 dark:border-red-900/30 dark:bg-red-900/10">
@@ -492,7 +477,7 @@ export const CaseLayout = memo(function CaseLayout({
           </FadeIn>
         )}
 
-        {/* ─── Business Effect — dark accent ─── */}
+        {/* ─── Бизнес-эффект (тёмный блок) ─── */}
         {caseStudy.businessEffect && caseStudy.businessEffect.length > 0 && (
           <FadeIn as="section" className={`bg-gray-900 dark:bg-gray-800 ${cx.sectionY}`}>
             <div className={cx.outer}>
@@ -520,7 +505,7 @@ export const CaseLayout = memo(function CaseLayout({
           </FadeIn>
         )}
 
-        {/* ─── Growth Ideas ─── */}
+        {/* ─── Идеи для роста ─── */}
         {caseStudy.showGrowthIdeas !== false && caseStudy.growthIdeas && caseStudy.growthIdeas.items.length > 0 && (
           <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
             <h2 className="mb-[8px] flex items-center gap-2 text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
@@ -558,7 +543,7 @@ export const CaseLayout = memo(function CaseLayout({
           </FadeIn>
         )}
 
-        {/* ─── Closure reason ─── */}
+        {/* ─── Причина закрытия ─── */}
         {caseStudy.closureChain && caseStudy.closureChain.length > 0 ? (
           <FadeIn as="section" className="border-t border-gray-100 pt-[55px] pb-[34px] md:pt-[89px] md:pb-[55px] dark:border-white/8">
             <div className={cx.outer}>
@@ -568,7 +553,7 @@ export const CaseLayout = memo(function CaseLayout({
               <div className="flex flex-col items-center gap-3 md:flex-row md:items-start md:gap-0">
                 {caseStudy.closureChain.map((step, i) => (
                   <div key={i} className="flex flex-1 flex-col items-center md:flex-row md:items-start">
-                    {/* Step card */}
+                    {/* Карточка шага */}
                     <div className="flex flex-1 flex-col items-center text-center px-3 md:px-4">
                       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 dark:bg-white/[0.07]">
                         {step.icon === "ban" && <ShieldBan className="h-6 w-6 text-red-500 dark:text-red-400" />}
@@ -579,7 +564,7 @@ export const CaseLayout = memo(function CaseLayout({
                         {step.text}
                       </p>
                     </div>
-                    {/* Arrow between steps */}
+                    {/* Стрелка между шагами */}
                     {i < caseStudy.closureChain!.length - 1 && (
                       <>
                         <ArrowRight className="my-1 hidden h-5 w-5 flex-shrink-0 text-gray-300 md:mt-4 md:block dark:text-gray-600" />
@@ -608,7 +593,7 @@ export const CaseLayout = memo(function CaseLayout({
           </FadeIn>
         ) : null}
 
-        {/* ─── Learned ─── */}
+        {/* ─── Выводы ─── */}
         {caseStudy.learned.length > 0 && (
           <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
             <div className="rounded-2xl bg-amber-50/60 px-6 py-6 md:px-8 md:py-7 dark:bg-amber-900/10">
@@ -635,7 +620,7 @@ export const CaseLayout = memo(function CaseLayout({
           </FadeIn>
         )}
 
-        {/* ─── Legal note ─── */}
+        {/* ─── Юридическая сноска ─── */}
         {caseStudy.legalNote && (
           <div className={`${cx.outer} pb-[21px]`}>
             <p className="text-[11px] leading-[1.618] text-gray-300 dark:text-gray-600">
@@ -644,7 +629,7 @@ export const CaseLayout = memo(function CaseLayout({
           </div>
         )}
 
-        {/* ═══════════  FINAL CTA  ═══════════ */}
+        {/* ═══════════  Блок «Связаться»  ═══════════ */}
         <section className={`bg-gray-50 dark:bg-gray-900/50 ${cx.sectionY}`}>
           <div className={`text-center ${cx.outer}`}>
             <h2 className="mb-[13px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
@@ -675,7 +660,7 @@ export const CaseLayout = memo(function CaseLayout({
         </section>
       </article>
 
-      {/* Analytics lightbox */}
+      {/* Просмотр скриншотов аналитики */}
       {analyticsLightbox && caseStudy.analyticsScreenshots && (
         <ImageModal
           images={caseStudy.analyticsScreenshots.items}
@@ -685,7 +670,7 @@ export const CaseLayout = memo(function CaseLayout({
         />
       )}
 
-      {/* ─── Sticky CTA (bottom-right) ─── */}
+      {/* ─── Плавающая кнопка «Связаться» ─── */}
       <button
         onClick={() => setContactOpen(true)}
         aria-label="Связаться"

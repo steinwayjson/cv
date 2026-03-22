@@ -8,13 +8,9 @@ interface HeroCaseProps {
 }
 
 /**
- * Case hero — B2B business-case style.
- * – Dark gradient background (navy), no background image
- * – Strict vertical flow: back → niche → title → subtitle → period → metrics → tools
- * – Max 760px height on desktop, ~70vh
- * – Metrics are the primary visual element after the title
+ * Шапка кейса: тёмный градиент, заголовок, метрики, инструменты.
  */
-/* ─── Static styles (avoid inline object re-creation) ─── */
+/* ─── Статичные стили (вынесены чтобы не создавались заново) ─── */
 const heroStyle = {
   maxHeight: "760px",
   background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
@@ -35,19 +31,19 @@ export const HeroCase = memo(function HeroCase({ caseStudy }: HeroCaseProps) {
       className="relative flex min-h-[60vh] items-end overflow-hidden md:min-h-[70vh]"
       style={heroStyle}
     >
-      {/* Subtle radial glow */}
+      {/* Фоновое свечение */}
       <div
         className="absolute inset-0 opacity-30"
         style={glowStyle}
       />
-      {/* Noise texture */}
+      {/* Шумовая текстура */}
       <div
         className="absolute inset-0 opacity-[0.035]"
         style={noiseStyle}
       />
 
       <div className="relative z-10 mx-auto w-full max-w-[1140px] px-5 pb-10 pt-20 sm:px-8 md:pb-12 md:pt-24">
-        {/* Back link */}
+        {/* Ссылка «Назад» */}
         <Link
           to="/"
           className="mb-6 inline-flex items-center gap-1.5 text-sm text-white/50 transition-colors hover:text-white md:mb-8"
@@ -56,17 +52,17 @@ export const HeroCase = memo(function HeroCase({ caseStudy }: HeroCaseProps) {
           Назад
         </Link>
 
-        {/* Niche / category */}
+        {/* Ниша */}
         <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.18em] text-white/35">
           {caseStudy.niche}
         </p>
 
-        {/* Title */}
+        {/* Заголовок */}
         <h1 className="mb-[13px] max-w-[900px] text-[1.625rem] font-bold leading-[1.2] text-white md:mb-[21px] md:text-[2.0625rem] md:leading-[1.15]">
           {caseStudy.title}
         </h1>
 
-        {/* Subtitle */}
+        {/* Подзаголовок */}
         {caseStudy.subtitle && (
           <p className="mb-[21px] max-w-[700px] text-[15px] leading-[1.618] text-white/55 md:mb-[34px]">
             {caseStudy.subtitle}
@@ -75,7 +71,7 @@ export const HeroCase = memo(function HeroCase({ caseStudy }: HeroCaseProps) {
 
         {!caseStudy.subtitle && <div className="mb-[21px] md:mb-[34px]" />}
 
-        {/* KPI metrics — primary visual element */}
+        {/* Метрики */}
         {caseStudy.kpis.length > 0 && (
           <div
             className={`grid max-w-[900px] gap-3 md:gap-4 ${
@@ -107,14 +103,14 @@ export const HeroCase = memo(function HeroCase({ caseStudy }: HeroCaseProps) {
           </div>
         )}
 
-        {/* Comparison period — below cards */}
+        {/* Период сравнения */}
         {caseStudy.comparisonPeriod && (
           <p className="mt-4 text-[11px] font-medium text-white/25 md:mt-5">
             {caseStudy.comparisonPeriod}
           </p>
         )}
 
-        {/* Tools */}
+        {/* Инструменты */}
         {caseStudy.tools.length > 0 && (
           <div className="mt-[34px] flex flex-wrap gap-2">
             {caseStudy.tools.map((tool) => (
@@ -128,7 +124,7 @@ export const HeroCase = memo(function HeroCase({ caseStudy }: HeroCaseProps) {
           </div>
         )}
 
-        {/* Hero footnote */}
+        {/* Сноска */}
         {caseStudy.heroNote && (
           <p className="mt-[21px] text-[11px] leading-[1.618] text-white/25">
             {caseStudy.heroNote}

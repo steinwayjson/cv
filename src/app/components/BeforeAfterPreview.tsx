@@ -10,10 +10,8 @@ interface BeforeAfterPreviewProps {
 }
 
 /**
- * Compact before/after slider for inline case pages.
- * – Fixed height: 420–520px desktop, max 60vh mobile
- * – object-fit: cover
- * – Click opens ImageModal (full-res)
+ * Слайдер «до / после». Двигай ползунок для сравнения.
+ * Кнопка «Увеличить» открывает полноразмерный просмотр.
  */
 export const BeforeAfterPreview = memo(function BeforeAfterPreview({
   before,
@@ -95,7 +93,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
               applyPosition(Math.min(100, currentPct + 2));
           }}
         >
-          {/* After (full background) */}
+          {/* «После» — фоновое изображение */}
           <img
             src={after.src}
             alt={after.caption ?? "После"}
@@ -105,7 +103,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
             draggable={false}
           />
 
-          {/* Before (clip-path) */}
+          {/* «До» — обрезается ползунком */}
           <img
             ref={beforeRef}
             src={before.src}
@@ -117,7 +115,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
             draggable={false}
           />
 
-          {/* Divider */}
+          {/* Ползунок-разделитель */}
           <div
             ref={dividerRef}
             className="absolute top-0 bottom-0 z-10 w-0.5 bg-white shadow-lg"
@@ -150,7 +148,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
             </div>
           </div>
 
-          {/* Labels */}
+          {/* Метки «До» / «После» */}
           <div className="absolute left-3 top-3 rounded-md bg-black/60 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm sm:px-3 sm:py-1.5 sm:text-sm">
             До
           </div>
@@ -158,7 +156,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
             После
           </div>
 
-          {/* Zoom hint */}
+          {/* Кнопка «Увеличить» */}
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
@@ -174,7 +172,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
           </button>
         </div>
 
-        {/* Description below preview */}
+        {/* Описание под превью */}
         {description && (
           <p className="text-sm leading-relaxed text-gray-500 dark:text-gray-400">{description}</p>
         )}

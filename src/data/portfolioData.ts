@@ -1,4 +1,4 @@
-// Конфигурация данных для портфолио
+// Данные портфолио
 
 export interface SkillGroup {
   emoji: string;
@@ -13,19 +13,19 @@ export interface GalleryImage {
 
 export interface GallerySection {
   title: string;
-  /** grid — сетка 2-3 колонки, full — во всю ширину, before-after — слайдер сравнения */
+  /** Тип раскладки: grid — сетка, full — на всю ширину, before-after — слайдер, paired-compare — парное сравнение */
   layout: "grid" | "full" | "before-after" | "paired-compare";
   items: GalleryImage[];
   description?: string;
-  /** Короткий чеклист, отображаемый после изображений: "Что изменили" */
+  /** Список изменений под изображениями */
   changes?: string[];
   /** Скрыть галерею без удаления данных */
   hidden?: boolean;
-  /** Компактная карточка результата, отображаемая после изменений */
+  /** Карточка с одним результатом */
   result?: { label: string; value: string; note?: string };
-  /** Несколько метрик результата */
+  /** Несколько результатов */
   results?: Array<{ label: string; value: string; note?: string }>;
-  /** Метки для колонки paired-compare */
+  /** Подписи к парам при парном сравнении */
   pairLabels?: string[];
 }
 
@@ -37,10 +37,10 @@ export interface KPI {
 
 export interface StrategyGroup {
   title: string;
-  /** Короткая заглавная метка над заголовком карточки (например, "SEO", "Content", "Growth") */
+  /** Метка над заголовком карточки (например, «SEO», «Content») */
   label?: string;
   items: string[];
-  /** Визуально деэмфазировать (например, экспериментальная ветка) */
+  /** Сделать карточку менее заметной (второстепенная) */
   secondary?: boolean;
 }
 
@@ -94,7 +94,7 @@ export interface CaseStudy {
   id: string;
   title: string;
   subtitle?: string;
-  /** Акцентная строка, отображаемая над сеткой KPI в блоке hero */
+  /** Акцентная строка над метриками в шапке кейса */
   heroAccent?: string;
   comparisonPeriod?: string;
   niche: string;
@@ -106,22 +106,22 @@ export interface CaseStudy {
   kpis: KPI[];
   startingPoint?: string[];
   challenge: string[];
-  /** Вступительная строка для блока "Подход" */
+  /** Вводная фраза для блока «Подход» */
   approach?: string;
   strategyGroups: StrategyGroup[];
   results: string[];
-  /** Вступительная строка для блока результатов ("За период работы с SEO-сайтом (Tilda):") */
+  /** Вводная фраза для блока результатов */
   resultsIntro?: string;
-  /** Дополнительные результаты с отдельным заголовком */
+  /** Доп. результаты с отдельным заголовком */
   resultsAdditional?: { heading: string; items: string[] };
-  /** Примечание между основными и дополнительными результатами */
+  /** Примечание между основными и доп. результатами */
   resultsNote?: string;
   businessEffect?: KPI[];
   growthPlan?: GrowthHypothesis[];
   growthIdeas?: { intro: string; items: GrowthIdea[] };
-  /** Блок результатов */
+  /** Показывать блок результатов */
   showResults?: boolean;
-  /** Блок идей для роста */
+  /** Показывать блок идей для роста */
   showGrowthIdeas?: boolean;
   learned: string[];
   organicComparison?: OrganicComparison;
@@ -131,7 +131,7 @@ export interface CaseStudy {
   firstTest?: FirstTestBlock;
   galleriesIntro?: string;
   antiCase?: AntiCase;
-  /** Показывать блок антикейса (по умолчанию true) */
+  /** Показывать блок антикейса */
   showAntiCase?: boolean;
   closureReason?: string[];
   closureChain?: ClosureStep[];
@@ -166,7 +166,7 @@ export interface PersonalInfo {
 }
 
 // =====================================
-// ДАННЫЕ О ПЕРСОНЕ 
+// Персональные данные
 // =====================================
 export const personalInfo: PersonalInfo = {
   name: "Михайличенко Андрей",

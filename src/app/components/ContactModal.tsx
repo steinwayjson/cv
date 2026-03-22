@@ -105,7 +105,7 @@ export const ContactModal = memo(function ContactModal({
       }}
     >
       <div className="relative w-full max-w-[420px] rounded-2xl border border-gray-200/80 bg-white p-6 shadow-2xl ring-1 ring-black/5 dark:border-white/10 dark:bg-gray-900 dark:ring-white/5">
-        {/* Close */}
+        {/* Закрыть */}
         <button
           onClick={onClose}
           aria-label="Закрыть"
@@ -114,12 +114,12 @@ export const ContactModal = memo(function ContactModal({
           <X className="h-5 w-5" />
         </button>
 
-        {/* Title */}
+        {/* Заголовок */}
         <h2 className="mb-5 text-xl font-bold text-gray-900 dark:text-gray-100">
           Связаться
         </h2>
 
-        {/* Channels */}
+        {/* Каналы связи */}
         <div className="flex flex-col gap-2">
           {channels.map((ch) => (
             <a

@@ -11,12 +11,8 @@ interface ImageModalProps {
 }
 
 /**
- * Full-screen image modal rendered via React Portal.
- * – max 90vw × 90vh
- * – darkened overlay
- * – Esc / click-outside / button to close
- * – arrow navigation
- * – body scroll lock
+ * Полноэкранный просмотр изображений (через портал).
+ * Закрытие: Esc, клик мимо, кнопка. Навигация стрелками.
  */
 export const ImageModal = memo(function ImageModal({
   images,
@@ -90,7 +86,7 @@ export const ImageModal = memo(function ImageModal({
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 outline-none"
       onClick={onClose}
     >
-      {/* Close */}
+      {/* Закрыть */}
       <button
         onClick={onClose}
         aria-label="Закрыть"
@@ -99,7 +95,7 @@ export const ImageModal = memo(function ImageModal({
         <X className="h-6 w-6" aria-hidden="true" />
       </button>
 
-      {/* Image area */}
+      {/* Изображение */}
       <div
         className="flex flex-1 max-w-[90vw] items-center justify-center"
         onClick={(e) => e.stopPropagation()}
@@ -114,7 +110,7 @@ export const ImageModal = memo(function ImageModal({
         />
       </div>
 
-      {/* Desktop side arrows (hidden on mobile) */}
+      {/* Стрелки по бокам — только десктоп */}
       {images.length > 1 && (
         <>
           <button
@@ -134,7 +130,7 @@ export const ImageModal = memo(function ImageModal({
         </>
       )}
 
-      {/* Bottom bar: caption + navigation (arrows only on mobile) */}
+      {/* Нижняя панель: подпись + навигация (стрелки только на мобильных) */}
       {images.length > 1 && (
         <div
           className="flex w-full items-center justify-between px-4 pb-6 pt-3"
@@ -169,7 +165,7 @@ export const ImageModal = memo(function ImageModal({
         </div>
       )}
 
-      {/* Single image caption (no nav bar) */}
+      {/* Подпись для единственного изображения */}
       {images.length <= 1 && current.caption && (
         <div className="pb-6 pt-3 px-4" onClick={(e) => e.stopPropagation()}>
           <p className="text-center text-sm text-white/80">{current.caption}</p>

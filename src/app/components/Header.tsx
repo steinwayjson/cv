@@ -13,7 +13,7 @@ export const Header = memo(function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/95 backdrop-blur transition-colors duration-300 supports-[backdrop-filter]:bg-white/60 dark:border-white/8 dark:bg-gray-950/90 dark:supports-[backdrop-filter]:bg-gray-950/70">
-      {/* Skip to content — accessibility */}
+      {/* Пропустить к содержимому (доступность) */}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-[60] focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-gray-900 focus:shadow dark:focus:bg-gray-800 dark:focus:text-gray-100"

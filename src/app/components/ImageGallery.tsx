@@ -9,10 +9,8 @@ interface ImageGalleryProps {
 }
 
 /**
- * Gallery renderer for case pages.
- * – before-after → BeforeAfterPreview (compact, fixed height)
- * – grid / full → clickable previews opening ImageModal
- * – After each section: "Что изменили" checklist + compact result card
+ * Галерея изображений для страниц кейсов.
+ * Поддерживает раскладки: сетка, на всю ширину, до/после, парное сравнение.
  */
 export const ImageGallery = memo(function ImageGallery({
   galleries,
@@ -34,7 +32,7 @@ export const ImageGallery = memo(function ImageGallery({
       <div className="space-y-14">
         {galleries.map((gallery, gi) => (
           <div key={gi}>
-            {/* Stage heading */}
+            {/* Заголовок секции */}
             <h3 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
               {gallery.title}
             </h3>
@@ -138,10 +136,10 @@ export const ImageGallery = memo(function ImageGallery({
               </div>
             )}
 
-            {/* "Что изменили" + "Результат" */}
+            {/* Список изменений + результат */}
             {(gallery.changes?.length || gallery.result || gallery.results?.length) && (
               <div className="mt-6 space-y-4">
-                {/* Changes checklist */}
+                {/* Список изменений */}
                 {gallery.changes && gallery.changes.length > 0 && (
                   <div className="rounded-xl border border-gray-100 bg-gray-50 px-5 py-5 md:px-6 dark:border-white/8 dark:bg-gray-900">
                     <p className="mb-3.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">
@@ -158,7 +156,7 @@ export const ImageGallery = memo(function ImageGallery({
                   </div>
                 )}
 
-                {/* Result card — single */}
+                {/* Результат — один */}
                 {gallery.result && (
                   <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-5 py-5 md:px-6 dark:border-emerald-900/30 dark:bg-emerald-900/10">
                     <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-emerald-600/70 dark:text-emerald-400/70">
@@ -181,7 +179,7 @@ export const ImageGallery = memo(function ImageGallery({
                   </div>
                 )}
 
-                {/* Results — multiple metrics */}
+                {/* Результаты — несколько */}
                 {gallery.results && gallery.results.length > 0 && (
                   <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-5 py-5 md:px-6 dark:border-emerald-900/30 dark:bg-emerald-900/10">
                     <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-emerald-600/70 dark:text-emerald-400/70">

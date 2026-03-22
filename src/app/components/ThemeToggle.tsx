@@ -2,10 +2,8 @@ import { memo } from "react";
 import { useTheme } from "@/app/hooks/useTheme";
 
 /**
- * Animated sun/moon toggle.
- * – Sun shines in light mode, moon glows in dark mode
- * – Smooth rotation + scale on switch
- * – Uses CSS transitions only (no JS animation)
+ * Переключатель темы (солнце / луна).
+ * Плавная анимация через CSS-переходы.
  */
 export const ThemeToggle = memo(function ThemeToggle() {
   const { theme, toggle } = useTheme();
@@ -18,7 +16,7 @@ export const ThemeToggle = memo(function ThemeToggle() {
       aria-label={isDark ? "Включить светлую тему" : "Включить тёмную тему"}
       className="relative flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors duration-300 hover:text-gray-900 dark:text-gray-500 dark:hover:text-gray-100"
     >
-      {/* Sun */}
+      {/* Солнце */}
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -43,7 +41,7 @@ export const ThemeToggle = memo(function ThemeToggle() {
         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
       </svg>
 
-      {/* Moon */}
+      {/* Луна */}
       <svg
         viewBox="0 0 24 24"
         fill="none"

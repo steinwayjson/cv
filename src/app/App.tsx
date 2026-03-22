@@ -9,11 +9,11 @@ const CasePage = lazy(() =>
   import("@/app/pages/CasePage").then((m) => ({ default: m.CasePage })),
 );
 
-/** Skeleton while CasePage is loading */
+/** Заглушка на время загрузки страницы кейса */
 function PageSkeleton() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950" aria-busy="true" aria-label="Загрузка страницы">
-      {/* Hero skeleton */}
+      {/* Скелет шапки */}
       <div className="relative flex min-h-[75vh] items-end overflow-hidden bg-gray-200 animate-pulse dark:bg-gray-800 md:min-h-[80vh]">
         <div className="relative z-10 w-full pb-12 pt-32 mx-auto max-w-[1140px] px-5 sm:px-8 md:pb-16">
           <div className="mb-8 h-4 w-16 rounded bg-gray-300 dark:bg-gray-700" />
@@ -27,7 +27,7 @@ function PageSkeleton() {
           </div>
         </div>
       </div>
-      {/* Content skeleton */}
+      {/* Скелет контента */}
       <div className="mx-auto max-w-[1140px] px-5 sm:px-8 py-16 space-y-4">
         <div className="h-4 w-full max-w-[500px] rounded bg-gray-100 dark:bg-gray-800" />
         <div className="h-4 w-full max-w-[600px] rounded bg-gray-100 dark:bg-gray-800" />
@@ -37,7 +37,7 @@ function PageSkeleton() {
   );
 }
 
-/** Reset scroll to top on route change */
+/** При переходе на другую страницу — скролл наверх */
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
