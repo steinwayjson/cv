@@ -114,7 +114,27 @@ export const ImageModal = memo(function ImageModal({
         />
       </div>
 
-      {/* Bottom bar: caption + navigation */}
+      {/* Desktop side arrows (hidden on mobile) */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={(e) => { e.stopPropagation(); hasPrev && onNavigate(currentIndex - 1); }}
+            aria-label="Предыдущее изображение"
+            className={`absolute left-4 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-white/10 p-3 text-white transition-opacity hover:bg-white/20 md:flex ${hasPrev ? "" : "pointer-events-none opacity-30"}`}
+          >
+            <ChevronLeft className="h-6 w-6" aria-hidden="true" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); hasNext && onNavigate(currentIndex + 1); }}
+            aria-label="Следующее изображение"
+            className={`absolute right-4 top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-white/10 p-3 text-white transition-opacity hover:bg-white/20 md:flex ${hasNext ? "" : "pointer-events-none opacity-30"}`}
+          >
+            <ChevronRight className="h-6 w-6" aria-hidden="true" />
+          </button>
+        </>
+      )}
+
+      {/* Bottom bar: caption + navigation (arrows only on mobile) */}
       {images.length > 1 && (
         <div
           className="flex w-full items-center justify-between px-4 pb-6 pt-3"
@@ -123,7 +143,7 @@ export const ImageModal = memo(function ImageModal({
           <button
             onClick={() => hasPrev && onNavigate(currentIndex - 1)}
             aria-label="Предыдущее изображение"
-            className={`rounded-full bg-white/10 p-3 text-white transition-opacity hover:bg-white/20 ${hasPrev ? "" : "pointer-events-none opacity-30"}`}
+            className={`rounded-full bg-white/10 p-3 text-white transition-opacity hover:bg-white/20 md:invisible ${hasPrev ? "" : "pointer-events-none opacity-30"}`}
           >
             <ChevronLeft className="h-6 w-6" aria-hidden="true" />
           </button>
@@ -142,7 +162,7 @@ export const ImageModal = memo(function ImageModal({
           <button
             onClick={() => hasNext && onNavigate(currentIndex + 1)}
             aria-label="Следующее изображение"
-            className={`rounded-full bg-white/10 p-3 text-white transition-opacity hover:bg-white/20 ${hasNext ? "" : "pointer-events-none opacity-30"}`}
+            className={`rounded-full bg-white/10 p-3 text-white transition-opacity hover:bg-white/20 md:invisible ${hasNext ? "" : "pointer-events-none opacity-30"}`}
           >
             <ChevronRight className="h-6 w-6" aria-hidden="true" />
           </button>
