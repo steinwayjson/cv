@@ -161,6 +161,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
           {/* Zoom hint */}
           <button
             type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               setModal({ index: 0 });
