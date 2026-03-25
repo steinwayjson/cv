@@ -140,7 +140,7 @@ export const mskDeveloperCase: CaseStudy = {
   },
 
   growthPlan: undefined,
-  showResults: false,
+  showResults: true,
   showGrowthIdeas: false,
 
   learned: [

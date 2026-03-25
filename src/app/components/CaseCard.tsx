@@ -14,9 +14,9 @@ export const CaseCard = memo(function CaseCard({ caseStudy, featured }: CaseCard
   return (
     <Link
       to={`/case/${caseStudy.id}`}
-      className="group block overflow-hidden rounded-xl border border-gray-100 bg-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm md:rounded-2xl dark:border-white/8 dark:bg-gray-900"
+      className="group block overflow-hidden rounded-xl border border-border bg-card transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-sm md:rounded-2xl"
     >
-      <div className="relative overflow-hidden bg-gray-100 aspect-[2.4/1] dark:bg-gray-800">
+        <div className="relative overflow-hidden bg-accent aspect-[2.4/1]">
         <img
           src={caseStudy.image}
           alt={caseStudy.title}
@@ -45,20 +45,20 @@ export const CaseCard = memo(function CaseCard({ caseStudy, featured }: CaseCard
         )}
       </div>
       <div className="p-[21px] md:p-[34px]">
-        <p className="mb-[5px] text-[13px] font-medium text-gray-400 dark:text-gray-500">{caseStudy.niche}</p>
-        <h3 className="mb-[5px] text-[1.25rem] font-bold leading-snug text-[#1a1a1a] dark:text-gray-100">
+        <p className="mb-[5px] text-[13px] font-medium text-muted-foreground">{caseStudy.niche}</p>
+        <h3 className="mb-[5px] text-[1.25rem] font-bold leading-snug">
           {caseStudy.title}
         </h3>
-        <p className="mb-[8px] text-[14px] font-medium text-gray-400 dark:text-gray-500">
+        <p className="mb-[8px] text-[14px] font-medium text-muted-foreground">
           Роль: {caseStudy.role.length > 80 ? caseStudy.role.slice(0, 80) + '…' : caseStudy.role}
         </p>
-        <p className="mb-[13px] text-[14px] leading-[1.618] text-gray-500 dark:text-gray-400">
-          <span className="font-medium text-gray-400 dark:text-gray-500">Задача: </span>
+        <p className="mb-[13px] text-[14px] leading-[1.618] text-muted-foreground">
+          <span className="font-medium text-muted-foreground">Задача: </span>
           {caseStudy.context.length > 120
             ? caseStudy.context.slice(0, 120) + '…'
             : caseStudy.context}
         </p>
-        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-900 dark:text-gray-200">
+        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground">
           Подробнее
           <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
         </span>

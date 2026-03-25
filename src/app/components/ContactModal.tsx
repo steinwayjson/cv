@@ -104,18 +104,18 @@ export const ContactModal = memo(function ContactModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-[420px] rounded-2xl border border-gray-200/80 bg-white p-6 shadow-2xl ring-1 ring-black/5 dark:border-white/10 dark:bg-gray-900 dark:ring-white/5">
+        <div className="relative w-full max-w-[420px] rounded-2xl border border-border bg-card p-6 shadow-2xl ring-1 ring-black/5 dark:ring-white/5">
         {/* Закрыть */}
         <button
           onClick={onClose}
           aria-label="Закрыть"
-          className="absolute right-4 top-4 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-white/10 dark:hover:text-gray-200"
+          className="absolute right-4 top-4 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Заголовок */}
-        <h2 className="mb-5 text-xl font-bold text-gray-900 dark:text-gray-100">
+        <h2 className="mb-5 text-xl font-bold">
           Связаться
         </h2>
 
@@ -127,16 +127,16 @@ export const ContactModal = memo(function ContactModal({
               href={ch.href}
               target={ch.href.startsWith("http") ? "_blank" : undefined}
               rel={ch.href.startsWith("http") ? "noreferrer" : undefined}
-              className="flex items-center gap-4 rounded-xl border border-gray-100 px-4 py-3.5 transition-all hover:border-gray-200 hover:bg-gray-50 hover:shadow-sm active:scale-[0.99] dark:border-white/8 dark:hover:border-white/15 dark:hover:bg-white/5"
+              className="flex items-center gap-4 rounded-xl border border-border px-4 py-3.5 transition-[border-color,background-color,box-shadow] hover:border-border hover:bg-accent hover:shadow-sm active:scale-[0.99]"
             >
               <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${ch.bgColor}`}>
                 <ch.icon className={`h-5 w-5 ${ch.iconColor}`} />
               </span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <div className="min-w-0 overflow-hidden">
+                <p className="text-sm font-semibold truncate">
                   {ch.label}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
+                <p className="text-xs text-muted-foreground truncate">
                   {ch.desc}
                 </p>
               </div>

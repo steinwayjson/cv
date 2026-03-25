@@ -22,7 +22,7 @@ upload() {
     --content-type "$content_type" --quiet
 }
 
-find "$BUILD_DIR" -type f | while read file; do
+find "$BUILD_DIR" -type f -not -path "*/server/*" | while read file; do
   upload "$file"
 done
 

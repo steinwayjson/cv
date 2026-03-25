@@ -14,7 +14,7 @@ export const ThemeToggle = memo(function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-label={isDark ? "Включить светлую тему" : "Включить тёмную тему"}
-      className="relative flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors duration-300 hover:text-gray-900 dark:text-gray-500 dark:hover:text-gray-100"
+      className="relative flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-300 hover:text-foreground"
     >
       {/* Солнце */}
       <svg
@@ -24,7 +24,7 @@ export const ThemeToggle = memo(function ThemeToggle() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className={`absolute h-[18px] w-[18px] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+        className={`absolute h-[18px] w-[18px] transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
           isDark
             ? "rotate-90 scale-0 opacity-0"
             : "rotate-0 scale-100 opacity-100"
@@ -49,7 +49,7 @@ export const ThemeToggle = memo(function ThemeToggle() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className={`absolute h-[18px] w-[18px] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+        className={`absolute h-[18px] w-[18px] transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
           isDark
             ? "rotate-0 scale-100 opacity-100"
             : "-rotate-90 scale-0 opacity-0"

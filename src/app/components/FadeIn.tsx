@@ -1,4 +1,6 @@
-import { memo, type ReactNode, useEffect, useRef } from "react";
+import { memo, type ReactNode, useEffect, useRef, useState } from "react";
+
+const isServer = typeof window === "undefined";
 
 interface Props {
   children: ReactNode;
@@ -10,10 +12,23 @@ interface Props {
 
 export const FadeIn = memo(function FadeIn({ children, className = "", as: Tag = "div", delay = 0, id }: Props) {
   const ref = useRef<HTMLElement>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     const el = ref.current;
     if (!el) return;
+
+    // После гидрации убираем is-visible (которая была для SSR),
+    // чтобы дать IntersectionObserver управлять анимацией
+    el.classList.remove("is-visible");
+
+    // Небольшой reflow, чтобы transition сработал
+    void el.offsetHeight;
 
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
@@ -38,13 +53,16 @@ export const FadeIn = memo(function FadeIn({ children, className = "", as: Tag =
       observer.disconnect();
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [delay]);
+  }, [hydrated, delay]);
+
+  // На сервере и до гидрации — рендерим видимым (is-visible)
+  const visibleClass = isServer || !hydrated ? "is-visible" : "";
 
   return (
     <Tag
       ref={ref as React.RefObject<never>}
       id={id}
-      className={`fade-section ${className}`}
+      className={`fade-section ${visibleClass} ${className}`}
       style={delay ? { transitionDelay: `${delay}ms` } : undefined}
     >
       {children}

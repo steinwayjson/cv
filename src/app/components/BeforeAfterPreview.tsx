@@ -78,7 +78,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
           aria-valuemax={100}
           aria-valuenow={50}
           tabIndex={0}
-          className="relative w-full cursor-col-resize select-none overflow-hidden rounded-xl bg-gray-100 touch-none dark:bg-gray-800"
+          className="relative w-full cursor-col-resize select-none overflow-hidden rounded-xl bg-accent touch-none"
           style={{ aspectRatio: "4/3" }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -99,7 +99,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
             alt={after.caption ?? "После"}
             loading="lazy"
             decoding="async"
-            className="absolute inset-0 h-full w-full object-contain sm:object-cover bg-gray-100 dark:bg-gray-800"
+            className="absolute inset-0 h-full w-full object-contain sm:object-cover bg-accent"
             draggable={false}
           />
 
@@ -110,7 +110,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
             alt={before.caption ?? "До"}
             loading="lazy"
             decoding="async"
-            className="absolute inset-0 h-full w-full object-contain sm:object-cover bg-gray-100 dark:bg-gray-800"
+            className="absolute inset-0 h-full w-full object-contain sm:object-cover bg-accent"
             style={{ clipPath: "inset(0 50% 0 0)" }}
             draggable={false}
           />
@@ -174,7 +174,7 @@ export const BeforeAfterPreview = memo(function BeforeAfterPreview({
 
         {/* Описание под превью */}
         {description && (
-          <p className="text-sm leading-relaxed text-gray-500 dark:text-gray-400">{description}</p>
+          <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
         )}
       </div>
 

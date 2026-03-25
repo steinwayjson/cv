@@ -15,10 +15,9 @@ interface CaseLayoutProps {
 
 /* ─── Токены разметки ─── */
 const cx = {
-  outer: "mx-auto max-w-[1140px] px-5 sm:px-8",
+  outer: "mx-auto max-w-[1800px] px-6 md:px-12",
   text: "max-w-[700px]",
-  /** Вертикальный ритм секций */
-  sectionY: "py-[55px] md:py-[89px]",
+  sectionY: "py-16 md:py-32",
 };
 
 /* ─── Карточка подхода (аккордеон на мобилке) ─── */
@@ -38,17 +37,17 @@ function StrategyCard({ group }: { group: StrategyGroupData }) {
   return (
     <div className={`flex h-full flex-col rounded-2xl border px-[21px] py-[21px] transition-transform duration-200 ease-out md:px-[34px] md:py-[34px] ${
       group.secondary
-        ? "border-gray-100 bg-gray-50/60 opacity-85 dark:border-gray-800 dark:bg-gray-800/40"
-        : "border-gray-200/80 bg-white md:hover:-translate-y-1 md:hover:shadow-md dark:border-white/10 dark:bg-gray-900"
+        ? "border-border/50 bg-accent/40 opacity-85"
+        : "border-border bg-card md:hover:-translate-y-1 md:hover:shadow-md"
     }`}>
       {/* Метка */}
       {group.label && (
-        <span className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">
+        <span className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
           {group.label}
         </span>
       )}
       {/* Заголовок */}
-      <h3 className="mb-[13px] text-[1.25rem] font-semibold leading-snug text-gray-900 dark:text-gray-100">
+      <h3 className="mb-[13px] text-[1.25rem] font-semibold leading-snug">
         {group.title}
       </h3>
       {/* Пункты */}
@@ -61,11 +60,11 @@ function StrategyCard({ group }: { group: StrategyGroupData }) {
               key={ii}
               className={`flex gap-2.5 text-[14px] leading-[1.618] md:text-[15px] ${
                 isLast
-                  ? "font-medium text-gray-800 dark:text-gray-200"
-                  : "text-gray-600 dark:text-gray-400"
+                  ? "font-medium text-foreground/80"
+                  : "text-muted-foreground"
               } ${isHiddenMobile ? "hidden md:flex" : "flex"}`}
             >
-              <span className="mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gray-300 dark:bg-gray-600" />
+              <span className="mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary/30" />
               <span className="max-w-[420px]">{item}</span>
             </li>
           );
@@ -76,7 +75,7 @@ function StrategyCard({ group }: { group: StrategyGroupData }) {
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="mt-3 flex items-center gap-1 text-[13px] font-medium text-gray-400 transition-colors hover:text-gray-600 md:hidden dark:text-gray-500 dark:hover:text-gray-300"
+          className="mt-3 flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground md:hidden"
         >
           {expanded ? "Свернуть" : "Подробнее"}
           <ChevronDown
@@ -112,121 +111,145 @@ function ContextAndApproachSection({
 
   return (
     <>
-      {/* ── Контекст + исходные данные ── */}
-      {(context || hasMetrics) && (
-        <div className="border-t border-gray-100 py-[34px] md:py-[55px] dark:border-white/8">
-          <div className={cx.outer}>
-            <div
-              className={`flex flex-col gap-[34px] ${
-                context && hasMetrics
-                  ? "md:grid md:grid-cols-[1.618fr_1fr] md:items-start"
-                  : ""
-              }`}
-            >
-              {context && (
-                <div>
-                  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">
+      {/* ── Контекст ── */}
+      {context && (
+        <FadeIn className={`py-12 md:py-20 ${cx.outer}`}>
+          <div className="grid md:grid-cols-12 gap-8 md:gap-12">
+            <div className="md:col-span-3">
+              <div className="sticky top-32">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-1 h-16 bg-primary/50" />
+                  <h3 className="text-xs tracking-[0.25em] uppercase text-muted-foreground">
                     Контекст
-                  </p>
-                  <p className="max-w-[700px] text-[0.9375rem] leading-[1.618] text-gray-600 dark:text-gray-400">
-                    {context}
-                  </p>
+                  </h3>
                 </div>
-              )}
-
-              {hasMetrics && (
-                <div>
-                  <p className="mb-[13px] text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">
-                    Исходные данные
-                  </p>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {startingPoint!.map((item, i) => {
-                      const colonIdx = item.indexOf(":");
-                      const dashIdx = item.indexOf("—");
-                      const splitIdx = colonIdx > 0 ? colonIdx : dashIdx > 0 ? dashIdx : -1;
-                      const sep = colonIdx > 0 ? ":" : "—";
-
-                      if (splitIdx > 0) {
-                        const label = item.slice(0, splitIdx).trim();
-                        const value = item.slice(splitIdx + sep.length).trim();
-                        return (
-                          <div
-                            key={i}
-                            className="relative flex min-h-[80px] flex-col justify-center overflow-hidden rounded-lg border border-amber-100 bg-amber-50/40 px-4 py-3 pl-5 dark:border-amber-900/30 dark:bg-amber-900/10"
-                          >
-                            <span className="absolute left-0 top-0 h-full w-[3px] rounded-l-lg bg-amber-300/70 dark:bg-amber-500/50" />
-                            <div className="text-[1.25rem] font-bold leading-tight text-gray-900 dark:text-gray-100">
-                              {value}
-                            </div>
-                            <div className="mt-0.5 text-[11px] font-medium leading-snug text-amber-700/70 md:text-[12px] dark:text-amber-400/60">
-                              {label}
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div
-                          key={i}
-                          className="relative flex min-h-[80px] flex-col justify-center overflow-hidden rounded-lg border border-amber-100 bg-amber-50/40 px-4 py-3 pl-5 dark:border-amber-900/30 dark:bg-amber-900/10"
-                        >
-                          <span className="absolute left-0 top-0 h-full w-[3px] rounded-l-lg bg-amber-300/70 dark:bg-amber-500/50" />
-                          <p className="text-[13px] font-medium leading-[1.45] text-gray-700 dark:text-gray-300">
-                            {item}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              </div>
+            </div>
+            <div className="md:col-span-9">
+              <div className="p-8 md:p-10 rounded-3xl bg-accent/30 border border-border">
+                <p className="text-base md:text-lg leading-relaxed text-muted-foreground">
+                  {context}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </FadeIn>
+      )}
+
+      {/* ── Исходные данные ── */}
+      {hasMetrics && (
+        <FadeIn className={`py-12 md:py-20 ${cx.outer}`}>
+          <div className="mb-12">
+            <div className="flex items-center gap-6 mb-6">
+              <div className="w-1 h-12 bg-primary" />
+              <h3 className="text-xs tracking-[0.25em] uppercase text-muted-foreground">
+                Исходные данные
+              </h3>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+            {startingPoint!.map((item, i) => {
+              const colonIdx = item.indexOf(":");
+              const dashIdx = item.indexOf("—");
+              const splitIdx = colonIdx > 0 ? colonIdx : dashIdx > 0 ? dashIdx : -1;
+              const sep = colonIdx > 0 ? ":" : "—";
+
+              if (splitIdx > 0) {
+                const label = item.slice(0, splitIdx).trim();
+                const value = item.slice(splitIdx + sep.length).trim();
+                return (
+                  <div
+                    key={i}
+                    className="p-8 rounded-3xl bg-background border-l-4 border-t border-r border-b border-orange-500 hover:shadow-lg transition-shadow duration-500"
+                  >
+                    <div className="text-4xl md:text-5xl font-medium text-orange-500 mb-4">
+                      {value}
+                    </div>
+                    <h4 className="text-base md:text-lg font-medium mb-2">{label}</h4>
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={i}
+                  className="p-8 rounded-3xl bg-background border-l-4 border-t border-r border-b border-orange-500 hover:shadow-lg transition-shadow duration-500"
+                >
+                  <p className="text-base font-medium text-foreground/80">{item}</p>
+                </div>
+              );
+            })}
+          </div>
+        </FadeIn>
       )}
 
       {/* ── Подход + карточки стратегий ── */}
       {(approach || activeGroups.length > 0) && (
-        <section className="bg-gray-50/80 py-[34px] md:py-[55px] dark:bg-gray-900/60">
-          <div className={cx.outer}>
-            {approach && (
-              <div className="mb-6">
-                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">
-                  Подход
-                </p>
-                <p className="max-w-[700px] text-[0.9375rem] leading-[1.618] text-gray-500 dark:text-gray-400">
-                  {approach}
-                </p>
-              </div>
-            )}
-
-            {/* Первый тест — до подхода */}
-            {firstTest && (
-              <div className="mb-6 rounded-2xl border border-amber-100 bg-amber-50/50 px-6 py-7 md:px-8 md:py-8 dark:border-amber-900/30 dark:bg-amber-900/10">
-                <h3 className="mb-[13px] text-[1.25rem] font-bold text-gray-900 dark:text-gray-100">
-                  {firstTest.title}
-                </h3>
-                <div className={`space-y-3 ${cx.text}`}>
-                  {firstTest.paragraphs.map((p, i) => (
-                    <p key={i} className="text-[15px] leading-[1.618] text-gray-600 dark:text-gray-400">{p}</p>
-                  ))}
-                </div>
-                <div className="mt-5 flex flex-wrap items-center gap-3">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Результат</span>
-                  <span className="text-[15px] font-semibold text-gray-800 dark:text-gray-200">{firstTest.result}</span>
-                </div>
-                {firstTest.note && (
-                  <p className="mt-2 text-[13px] italic text-gray-400 dark:text-gray-500">{firstTest.note}</p>
-                )}
-              </div>
-            )}
-            <div className={`grid gap-[13px] md:gap-[21px] ${cols}`}>
-              {activeGroups.map((group, gi) => (
-                <StrategyCard key={gi} group={group} />
-              ))}
+        <FadeIn as="section" className={`py-16 md:py-24 ${cx.outer}`}>
+          {/* Заголовок */}
+          <div className="mb-12">
+            <div className="flex items-center gap-6 mb-6">
+              <div className="w-1 h-12 bg-primary" />
+              <h3 className="text-xs tracking-[0.25em] uppercase text-muted-foreground">
+                Подход
+              </h3>
             </div>
+            {approach && (
+              <p className="text-base md:text-lg text-muted-foreground max-w-3xl leading-relaxed">
+                {approach}
+              </p>
+            )}
           </div>
-        </section>
+
+          {/* Первый тест */}
+          {firstTest && (
+            <div className="mb-8 p-8 md:p-10 rounded-3xl bg-accent/30 border border-border">
+              <h3 className="text-xl md:text-2xl font-medium mb-4">
+                {firstTest.title}
+              </h3>
+              <div className={`space-y-3 ${cx.text}`}>
+                {firstTest.paragraphs.map((p, i) => (
+                  <p key={i} className="text-base leading-relaxed text-muted-foreground">{p}</p>
+                ))}
+              </div>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <span className="text-xs tracking-[0.2em] uppercase text-muted-foreground">Результат</span>
+                <span className="text-base font-medium">{firstTest.result}</span>
+              </div>
+              {firstTest.note && (
+                <p className="mt-2 text-sm italic text-muted-foreground">{firstTest.note}</p>
+              )}
+            </div>
+          )}
+
+          {/* Колонки стратегий */}
+          <div className={`grid gap-6 md:gap-8 ${cols}`}>
+            {activeGroups.map((group, gi) => (
+              <FadeIn key={gi} delay={gi * 100}>
+                <div className="p-8 rounded-3xl bg-background border border-border hover:border-primary/30 transition-[border-color] duration-300 h-full">
+                  {group.label && (
+                    <div className="mb-6 pb-4 border-b border-border">
+                      <span className="text-xs tracking-[0.2em] uppercase text-muted-foreground font-medium">
+                        {group.label}
+                      </span>
+                    </div>
+                  )}
+                  <h4 className="text-xl md:text-2xl font-medium mb-6 leading-tight">
+                    {group.title}
+                  </h4>
+                  <ul className="space-y-3">
+                    {group.items.map((item, ii) => (
+                      <li key={ii} className="flex items-start gap-3 text-sm md:text-base text-muted-foreground leading-relaxed">
+                        <span className="w-1 h-1 rounded-full bg-primary shrink-0 mt-2" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </FadeIn>
       )}
     </>
   );
@@ -270,7 +293,7 @@ export const CaseLayout = memo(function CaseLayout({
   }, [updateProgress]);
 
   return (
-    <div className="min-h-screen bg-white transition-colors duration-300 dark:bg-gray-950">
+    <div className="overflow-hidden">
       {/* Полоса прогресса */}
       <div ref={progressRef} className="scroll-progress" />
 
@@ -280,13 +303,24 @@ export const CaseLayout = memo(function CaseLayout({
       {/* ═══════════  Содержимое  ═══════════ */}
       <article>
         {/* ─── Роль ─── */}
-        <FadeIn className={`py-[34px] md:py-[55px] ${cx.outer}`} as="section">
-          <p className="mb-[13px] text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">
-            Роль
-          </p>
-          <p className={`text-[0.9375rem] leading-[1.618] text-gray-600 md:text-[1rem] dark:text-gray-400 ${cx.text}`}>
-            {caseStudy.role}
-          </p>
+        <FadeIn className={`py-16 md:py-24 ${cx.outer}`} as="section">
+          <div className="grid md:grid-cols-12 gap-8 md:gap-12">
+            <div className="md:col-span-3">
+              <div className="sticky top-32">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-1 h-16 bg-primary" />
+                  <h3 className="text-xs tracking-[0.25em] uppercase text-muted-foreground">
+                    Роль
+                  </h3>
+                </div>
+              </div>
+            </div>
+            <div className="md:col-span-9">
+              <p className="text-lg md:text-xl leading-relaxed text-muted-foreground">
+                {caseStudy.role}
+              </p>
+            </div>
+          </div>
         </FadeIn>
 
 
@@ -305,9 +339,11 @@ export const CaseLayout = memo(function CaseLayout({
         {/* ─── Галереи / до-после ─── */}
         {visibleGalleries && visibleGalleries.length > 0 && (
             <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
-              <h2 className="mb-[34px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
-                Реализация
-              </h2>
+              <div className="flex items-baseline gap-6 md:gap-8 mb-12 md:mb-16">
+                <h2 className="text-3xl md:text-4xl font-medium tracking-tight">
+                  Реализация
+                </h2>
+              </div>
               <ImageGallery galleries={visibleGalleries} />
             </FadeIn>
         )}
@@ -316,33 +352,33 @@ export const CaseLayout = memo(function CaseLayout({
         {(caseStudy.organicComparison || (caseStudy.analyticsScreenshots && caseStudy.analyticsScreenshots.items.length > 0)) && (
           <FadeIn as="section" className={`${cx.sectionY}`}>
             <div className={cx.outer}>
-              <h2 className="mb-[5px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-medium mb-3 tracking-tight">
                 Динамика показателей
               </h2>
               {caseStudy.organicComparison && (
-                <p className="mb-7 text-sm text-gray-400">{caseStudy.organicComparison.period}</p>
+                <p className="mb-10 text-base text-muted-foreground">{caseStudy.organicComparison.period}</p>
               )}
 
               {/* Таблица сравнения */}
               {caseStudy.organicComparison && (
-                <div className="mb-8 overflow-x-auto overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900">
-                  <div className="grid min-w-[400px] grid-cols-[1fr_80px_80px_64px] border-b border-gray-100 bg-gray-50/70 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:border-white/8 dark:bg-gray-800/50 dark:text-gray-500">
-                    <span>Показатель</span>
-                    <span className="text-right">До</span>
-                    <span className="text-right">После</span>
-                    <span className="text-right">Рост</span>
+                <div className="mb-8 overflow-x-auto overflow-hidden rounded-3xl border border-border bg-background">
+                  <div className="grid min-w-[400px] grid-cols-4 gap-4 p-6 bg-accent/30 border-b border-border">
+                    <span className="text-xs tracking-[0.15em] uppercase text-muted-foreground font-medium">Показатель</span>
+                    <span className="text-xs tracking-[0.15em] uppercase text-muted-foreground font-medium text-right">До</span>
+                    <span className="text-xs tracking-[0.15em] uppercase text-muted-foreground font-medium text-right">После</span>
+                    <span className="text-xs tracking-[0.15em] uppercase text-muted-foreground font-medium text-right">Рост</span>
                   </div>
                   {caseStudy.organicComparison.items.map((item, i) => (
                     <div
                       key={i}
-                      className={`grid min-w-[400px] grid-cols-[1fr_80px_80px_64px] items-center px-5 py-3.5 ${
-                        i < caseStudy.organicComparison!.items.length - 1 ? "border-b border-gray-100 dark:border-white/8" : ""
+                      className={`grid min-w-[400px] grid-cols-4 gap-4 p-6 hover:bg-accent/20 transition-colors ${
+                        i < caseStudy.organicComparison!.items.length - 1 ? "border-b border-border/50" : ""
                       }`}
                     >
-                      <span className="text-[14px] font-medium text-gray-700 dark:text-gray-300">{item.label}</span>
-                      <span className="text-right text-[14px] text-gray-400 dark:text-gray-500">{item.before}</span>
-                      <span className="text-right text-[14px] font-semibold text-gray-900 dark:text-gray-100">{item.after}</span>
-                      <span className="text-right text-[13px] font-bold text-emerald-600 dark:text-emerald-400">{item.multiplier}</span>
+                      <span className="font-medium">{item.label}</span>
+                      <span className="text-right text-muted-foreground">{item.before}</span>
+                      <span className="text-right font-medium">{item.after}</span>
+                      <span className="text-right font-medium text-primary flex items-center justify-end gap-1">{item.multiplier}</span>
                     </div>
                   ))}
                 </div>
@@ -350,7 +386,7 @@ export const CaseLayout = memo(function CaseLayout({
 
               {/* Сноска к таблице */}
               {caseStudy.organicComparison?.note && (
-                <p className="mb-8 -mt-5 text-[12px] leading-[1.618] text-gray-400 dark:text-gray-500">
+                <p className="mb-8 -mt-5 text-[12px] leading-[1.618] text-muted-foreground">
                   {caseStudy.organicComparison.note}
                 </p>
               )}
@@ -358,7 +394,7 @@ export const CaseLayout = memo(function CaseLayout({
               {/* Скриншоты аналитики */}
               {caseStudy.analyticsScreenshots && caseStudy.analyticsScreenshots.items.length > 0 && (
                 <>
-                  <p className="mb-4 text-[13px] leading-relaxed text-gray-400 dark:text-gray-500">
+                  <p className="mb-4 text-[13px] leading-relaxed text-muted-foreground">
                     {caseStudy.analyticsScreenshots.subtitle}
                   </p>
                   <div
@@ -373,11 +409,13 @@ export const CaseLayout = memo(function CaseLayout({
                         key={i}
                         type="button"
                         onClick={() => setAnalyticsLightbox({ index: i })}
-                        className="group relative overflow-hidden rounded-xl border border-gray-200 bg-gray-50 text-left dark:border-white/10 dark:bg-gray-800"
+                        className="group relative overflow-hidden rounded-xl border border-border bg-accent text-left"
                       >
                         <img
                           src={item.src}
                           alt={item.caption || "Скриншот аналитики"}
+                          width={640}
+                          height={400}
                           className="w-full object-cover"
                           loading="lazy"
                           decoding="async"
@@ -386,7 +424,7 @@ export const CaseLayout = memo(function CaseLayout({
                           <ZoomIn className="h-7 w-7 text-white opacity-0 drop-shadow transition-opacity group-hover:opacity-100" />
                         </div>
                         {item.caption && (
-                          <p className="border-t border-gray-100 bg-white px-3 py-2 text-[12px] text-gray-500 dark:border-white/8 dark:bg-gray-900 dark:text-gray-400">
+                          <p className="border-t border-border bg-card px-3 py-2 text-[12px] text-muted-foreground">
                             {item.caption}
                           </p>
                         )}
@@ -401,35 +439,39 @@ export const CaseLayout = memo(function CaseLayout({
 
         {/* ─── Результаты ─── */}
         {caseStudy.showResults !== false && <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
-          <h2 className="mb-[8px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
-            Результат
-          </h2>
+          <div className="mb-8 flex items-center gap-6">
+            <div className="w-1 h-12 bg-primary" />
+            <h3 className="text-xs tracking-[0.25em] uppercase text-muted-foreground">
+              Что изменили
+            </h3>
+          </div>
           {caseStudy.resultsIntro && (
-            <p className="mb-[21px] text-[15px] text-gray-500 dark:text-gray-400">{caseStudy.resultsIntro}</p>
+            <p className="mb-6 text-base text-muted-foreground">{caseStudy.resultsIntro}</p>
           )}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-5">
+          <div className="space-y-4">
             {caseStudy.results.map((result, index) => (
-              <div key={index} className="flex gap-3 rounded-xl border border-gray-200 bg-white px-5 py-5 dark:border-white/10 dark:bg-gray-900">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-500" />
-                <p className="text-[15px] leading-[1.618] text-gray-700 dark:text-gray-300">
-                  {result}
-                </p>
+              <div key={index} className="flex items-start gap-4 p-5 bg-accent/30 rounded-2xl border border-border/50 hover:border-primary/30 transition-colors">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                <p className="text-sm md:text-base leading-relaxed">{result}</p>
               </div>
             ))}
           </div>
           {caseStudy.resultsNote && (
-            <p className="mt-4 text-[14px] font-medium text-gray-500 dark:text-gray-400">{caseStudy.resultsNote}</p>
+            <p className="mt-6 text-sm text-muted-foreground">{caseStudy.resultsNote}</p>
           )}
           {caseStudy.resultsAdditional && (
-            <div className="mt-6">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">
-                {caseStudy.resultsAdditional.heading}
-              </p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="mt-8">
+              <div className="mb-6 flex items-center gap-6">
+                <div className="w-1 h-8 bg-primary/50" />
+                <h3 className="text-xs tracking-[0.25em] uppercase text-muted-foreground">
+                  {caseStudy.resultsAdditional.heading}
+                </h3>
+              </div>
+              <div className="space-y-3">
                 {caseStudy.resultsAdditional.items.map((item, i) => (
-                  <div key={i} className="flex gap-3 rounded-xl border border-gray-100 bg-gray-50 px-5 py-4 dark:border-white/8 dark:bg-gray-900">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-400" />
-                    <p className="text-[14px] leading-[1.6] text-gray-600 dark:text-gray-400">{item}</p>
+                  <div key={i} className="flex items-start gap-4 p-5 bg-accent/20 rounded-2xl border border-border/50 hover:border-primary/30 transition-colors">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                    <p className="text-sm md:text-base leading-relaxed text-muted-foreground">{item}</p>
                   </div>
                 ))}
               </div>
@@ -445,17 +487,17 @@ export const CaseLayout = memo(function CaseLayout({
                 <span className="inline-block rounded-full bg-red-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-red-600 dark:bg-red-900/30 dark:text-red-400">
                   Антикейс
                 </span>
-                <h2 className="text-[1.25rem] font-bold text-gray-900 dark:text-gray-100">
+                <h2 className="text-[1.25rem] font-bold text-foreground">
                   {caseStudy.antiCase.title}
                 </h2>
               </div>
-              <p className="mb-[21px] max-w-[700px] text-[15px] leading-[1.618] text-gray-600 dark:text-gray-400">
+              <p className="mb-[21px] max-w-[700px] text-[15px] leading-[1.618] text-muted-foreground">
                 {caseStudy.antiCase.description}
               </p>
               {caseStudy.antiCase.stats && caseStudy.antiCase.stats.length > 0 && (
                 <ul className="mb-6 space-y-2">
                   {caseStudy.antiCase.stats.map((stat, i) => (
-                    <li key={i} className="flex items-center gap-2.5 text-[14px] text-gray-500 dark:text-gray-400">
+                    <li key={i} className="flex items-center gap-2.5 text-[14px] text-muted-foreground">
                       <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-300 dark:bg-red-500/50" />
                       {stat}
                     </li>
@@ -469,7 +511,7 @@ export const CaseLayout = memo(function CaseLayout({
                 <span className="text-[13px] font-medium text-red-400 dark:text-red-500">итоговый результат</span>
               </div>
               {caseStudy.antiCase.decision && (
-                <p className="mt-[13px] text-[14px] italic leading-[1.618] text-gray-500 dark:text-gray-400">
+                <p className="mt-[13px] text-[14px] italic leading-[1.618] text-muted-foreground">
                   {caseStudy.antiCase.decision}
                 </p>
               )}
@@ -477,24 +519,29 @@ export const CaseLayout = memo(function CaseLayout({
           </FadeIn>
         )}
 
-        {/* ─── Бизнес-эффект (тёмный блок) ─── */}
+        {/* ─── Бизнес-эффект ─── */}
         {caseStudy.businessEffect && caseStudy.businessEffect.length > 0 && (
-          <FadeIn as="section" className={`bg-gray-900 dark:bg-gray-800 ${cx.sectionY}`}>
+          <FadeIn as="section" className={`bg-accent/30 ${cx.sectionY}`}>
             <div className={cx.outer}>
-              <h2 className="mb-[34px] text-[1.625rem] font-bold text-white">
-                Бизнес-эффект
-              </h2>
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 md:gap-3.5">
+              <div className="flex items-baseline gap-6 md:gap-8 mb-10 md:mb-14">
+                <span className="text-5xl font-light text-muted-foreground/20 select-none">
+                  ★
+                </span>
+                <h2 className="text-2xl md:text-4xl font-medium tracking-tight">
+                  Бизнес-эффект
+                </h2>
+              </div>
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:gap-6">
                 {caseStudy.businessEffect.map((kpi, i) => (
-                  <div key={i} className="rounded-xl bg-white/[0.07] px-5 py-5">
-                    <p className="text-[1.0625rem] font-bold leading-snug text-white md:text-[1.125rem]">
+                  <div key={i} className="p-6 md:p-8 bg-card border border-border rounded-2xl">
+                    <p className="text-2xl md:text-3xl font-medium mb-2">
                       {kpi.value}
                     </p>
-                    <p className="mt-2 text-[13px] font-medium leading-snug text-gray-400">
+                    <p className="text-sm text-muted-foreground leading-snug">
                       {kpi.label}
                     </p>
                     {kpi.note && (
-                      <p className="mt-2 text-[13px] font-semibold text-emerald-400">
+                      <p className="mt-3 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                         {kpi.note}
                       </p>
                     )}
@@ -508,32 +555,34 @@ export const CaseLayout = memo(function CaseLayout({
         {/* ─── Идеи для роста ─── */}
         {caseStudy.showGrowthIdeas !== false && caseStudy.growthIdeas && caseStudy.growthIdeas.items.length > 0 && (
           <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
-            <h2 className="mb-[8px] flex items-center gap-2 text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
-              <Lightbulb className="h-5 w-5 text-amber-500" />
-              Что можно было протестировать дальше
-            </h2>
-            <p className="mb-[34px] max-w-[700px] text-sm leading-[1.618] text-gray-400 dark:text-gray-500">
+            <div className="flex items-center gap-4 mb-4">
+              <Lightbulb className="w-6 h-6 text-primary" />
+              <h3 className="text-2xl md:text-3xl font-medium">
+                Что можно было протестировать дальше
+              </h3>
+            </div>
+            <p className="mb-10 max-w-3xl text-base leading-relaxed text-muted-foreground">
               {caseStudy.growthIdeas.intro}
             </p>
-            <div className="grid gap-[13px] md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-2 md:gap-8">
               {caseStudy.growthIdeas.items.map((idea, i) => (
                 <div
                   key={i}
-                  className="rounded-xl border border-gray-100 bg-gray-50/50 px-6 py-5 dark:border-white/8 dark:bg-gray-900"
+                  className="p-6 md:p-8 rounded-3xl border border-border bg-background hover:border-primary/30 transition-[border-color] duration-300"
                 >
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className="inline-block rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
+                  <div className="mb-4 pb-3 border-b border-border">
+                    <span className="text-xs tracking-[0.2em] uppercase text-muted-foreground font-medium">
                       Идея
                     </span>
                   </div>
-                  <p className="mb-2 text-[15px] font-medium leading-snug text-gray-900 dark:text-gray-100">
+                  <p className="mb-3 text-base md:text-lg font-medium leading-snug">
                     {idea.title}
                   </p>
-                  <p className="text-sm leading-[1.618] text-gray-500 dark:text-gray-400">
+                  <p className="text-sm md:text-base leading-relaxed text-muted-foreground">
                     {idea.paragraphs[0]}
                   </p>
                   {idea.paragraphs[1] && (
-                    <p className="mt-1.5 text-sm italic text-gray-400 dark:text-gray-500">
+                    <p className="mt-2 text-sm italic text-muted-foreground">
                       {idea.paragraphs[1]}
                     </p>
                   )}
@@ -545,9 +594,9 @@ export const CaseLayout = memo(function CaseLayout({
 
         {/* ─── Причина закрытия ─── */}
         {caseStudy.closureChain && caseStudy.closureChain.length > 0 ? (
-          <FadeIn as="section" className="border-t border-gray-100 pt-[55px] pb-[34px] md:pt-[89px] md:pb-[55px] dark:border-white/8">
+          <FadeIn as="section" className="border-t border-border pt-[55px] pb-[34px] md:pt-[89px] md:pb-[55px]">
             <div className={cx.outer}>
-              <h2 className="mb-[34px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
+              <h2 className="mb-[34px] text-[1.625rem] font-bold text-foreground">
                 Почему проект закрылся
               </h2>
               <div className="flex flex-col items-center gap-3 md:flex-row md:items-start md:gap-0">
@@ -555,20 +604,20 @@ export const CaseLayout = memo(function CaseLayout({
                   <div key={i} className="flex flex-1 flex-col items-center md:flex-row md:items-start">
                     {/* Карточка шага */}
                     <div className="flex flex-1 flex-col items-center text-center px-3 md:px-4">
-                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 dark:bg-white/[0.07]">
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
                         {step.icon === "ban" && <ShieldBan className="h-6 w-6 text-red-500 dark:text-red-400" />}
                         {step.icon === "funnel" && <Filter className="h-6 w-6 text-amber-500 dark:text-amber-400" />}
-                        {step.icon === "stop" && <CircleStop className="h-6 w-6 text-gray-500 dark:text-gray-400" />}
+                        {step.icon === "stop" && <CircleStop className="h-6 w-6 text-muted-foreground" />}
                       </div>
-                      <p className="max-w-[220px] text-[14px] leading-[1.5] text-gray-600 dark:text-gray-400">
+                      <p className="max-w-[220px] text-[14px] leading-[1.5] text-muted-foreground">
                         {step.text}
                       </p>
                     </div>
                     {/* Стрелка между шагами */}
                     {i < caseStudy.closureChain!.length - 1 && (
                       <>
-                        <ArrowRight className="my-1 hidden h-5 w-5 flex-shrink-0 text-gray-300 md:mt-4 md:block dark:text-gray-600" />
-                        <ChevronDown className="my-1 h-5 w-5 flex-shrink-0 rotate-0 text-gray-300 md:hidden dark:text-gray-600" />
+                        <ArrowRight className="my-1 hidden h-5 w-5 flex-shrink-0 text-muted-foreground/50 md:mt-4 md:block" />
+                        <ChevronDown className="my-1 h-5 w-5 flex-shrink-0 rotate-0 text-muted-foreground/50 md:hidden" />
                       </>
                     )}
                   </div>
@@ -578,13 +627,13 @@ export const CaseLayout = memo(function CaseLayout({
           </FadeIn>
         ) : caseStudy.closureReason && caseStudy.closureReason.length > 0 ? (
           <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 px-6 py-7 md:px-8 md:py-8 dark:border-white/10 dark:bg-gray-900">
-              <h2 className="mb-[13px] text-[1.25rem] font-bold text-gray-900 dark:text-gray-100">
+            <div className="rounded-2xl border border-border bg-accent px-6 py-7 md:px-8 md:py-8">
+              <h2 className="mb-[13px] text-[1.25rem] font-bold text-foreground">
                 Почему проект закрылся
               </h2>
               <div className={`space-y-3 ${cx.text}`}>
                 {caseStudy.closureReason.map((item, i) => (
-                  <p key={i} className="text-[15px] leading-[1.618] text-gray-600 dark:text-gray-400">
+                  <p key={i} className="text-[15px] leading-[1.618] text-muted-foreground">
                     {item}
                   </p>
                 ))}
@@ -596,26 +645,27 @@ export const CaseLayout = memo(function CaseLayout({
         {/* ─── Выводы ─── */}
         {caseStudy.learned.length > 0 && (
           <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
-            <div className="rounded-2xl bg-amber-50/60 px-6 py-6 md:px-8 md:py-7 dark:bg-amber-900/10">
-              <h2 className="mb-[21px] flex items-center gap-2 text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
-                <Lightbulb className="h-5 w-5 text-amber-500" />
-                Выводы
-              </h2>
-              <div className={cx.text}>
-                {caseStudy.learned.map((item, index) => (
-                  <div key={index}>
-                    {index > 0 && <div className="my-[18px] border-t border-amber-200/60 dark:border-amber-800/40" />}
-                    <div className="flex gap-4 md:gap-5">
-                      <span className="mt-[-2px] min-w-[32px] text-[1.625rem] font-black leading-none tracking-tight text-amber-300 dark:text-amber-700/80 select-none">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <p className="text-[0.9375rem] leading-[1.618] text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-4 mb-12">
+              <Lightbulb className="w-8 h-8 text-primary" />
+              <h3 className="text-2xl md:text-3xl font-medium">Выводы</h3>
+            </div>
+            <div className="space-y-8">
+              {caseStudy.learned.map((item, index) => (
+                <div key={index} className="grid md:grid-cols-12 gap-6 md:gap-8 group">
+                  <div className="md:col-span-2">
+                    <div className="text-5xl md:text-6xl font-light text-primary/30 group-hover:text-primary/50 transition-colors">
+                      {String(index + 1).padStart(2, "0")}
+                    </div>
+                  </div>
+                  <div className="md:col-span-10">
+                    <div className="p-6 md:p-8 rounded-2xl bg-accent/20 border border-border/50 hover:border-primary/30 hover:bg-accent/40 transition-[border-color,background-color] duration-300">
+                      <p className="text-base md:text-lg leading-relaxed text-muted-foreground">
                         {item}
                       </p>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </FadeIn>
         )}
@@ -623,33 +673,34 @@ export const CaseLayout = memo(function CaseLayout({
         {/* ─── Юридическая сноска ─── */}
         {caseStudy.legalNote && (
           <div className={`${cx.outer} pb-[21px]`}>
-            <p className="text-[11px] leading-[1.618] text-gray-300 dark:text-gray-600">
+            <p className="text-[11px] leading-[1.618] text-muted-foreground/50">
               {caseStudy.legalNote}
             </p>
           </div>
         )}
 
         {/* ═══════════  Блок «Связаться»  ═══════════ */}
-        <section className={`bg-gray-50 dark:bg-gray-900/50 ${cx.sectionY}`}>
+        <section className="py-16 md:py-24 border-t border-border">
           <div className={`text-center ${cx.outer}`}>
-            <h2 className="mb-[13px] text-[1.625rem] font-bold text-gray-900 dark:text-gray-100">
-              Обсудить проект?
+            <h2 className="text-2xl md:text-3xl font-medium mb-4">
+              Есть вопросы?
             </h2>
-            <p className="mx-auto mb-[34px] max-w-md text-base text-gray-500 dark:text-gray-400">
-              Открыт к предложениям в digital-маркетинге, performance и growth.
+            <p className="mx-auto mb-8 max-w-md text-base text-muted-foreground">
+              Свяжитесь или посмотрите следующий кейс.
             </p>
-            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <button
+                type="button"
                 onClick={() => setContactOpen(true)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-800 sm:w-auto dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 sm:w-auto"
               >
-                <Mail className="h-4 w-4" />
+                <Mail className="h-5 w-5" />
                 Связаться
               </button>
               {nextCase && nextCase.id !== caseStudy.id && (
                 <Link
                   to={`/case/${nextCase.id}`}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:text-gray-900 sm:w-auto dark:border-white/15 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-white/25 dark:hover:text-gray-100"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border px-8 py-4 text-sm font-medium transition-colors hover:bg-accent sm:w-auto"
                 >
                   Следующий кейс
                   <ArrowRight className="h-4 w-4" />
@@ -672,9 +723,10 @@ export const CaseLayout = memo(function CaseLayout({
 
       {/* ─── Плавающая кнопка «Связаться» ─── */}
       <button
+        type="button"
         onClick={() => setContactOpen(true)}
         aria-label="Связаться"
-        className="fixed bottom-6 right-6 z-50 flex h-12 items-center gap-2 rounded-full bg-gray-900 px-5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-gray-800 hover:shadow-xl md:bottom-8 md:right-8 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+        className="fixed bottom-6 right-6 z-[60] flex h-12 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground shadow-lg transition-opacity hover:opacity-90 md:bottom-8 md:right-8"
       >
         <Mail className="h-4 w-4" aria-hidden="true" />
         <span className="hidden sm:inline">Связаться</span>
