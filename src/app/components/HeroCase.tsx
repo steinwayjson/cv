@@ -34,12 +34,6 @@ export const HeroCase = memo(function HeroCase({ caseStudy }: HeroCaseProps) {
               <span className="text-xs tracking-[0.25em] uppercase text-muted-foreground">
                 {caseStudy.niche}
               </span>
-              {caseStudy.comparisonPeriod && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Calendar className="w-4 h-4" />
-                  {caseStudy.comparisonPeriod}
-                </div>
-              )}
             </div>
 
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-6 leading-tight">
@@ -103,6 +97,12 @@ export const HeroCase = memo(function HeroCase({ caseStudy }: HeroCaseProps) {
                   </div>
                 </div>
               ))}
+              {caseStudy.comparisonPeriod && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground/60 pt-1">
+                  <Calendar className="w-3.5 h-3.5 shrink-0" />
+                  <span>{caseStudy.comparisonPeriod}</span>
+                </div>
+              )}
             </div>
           )}
         </div>

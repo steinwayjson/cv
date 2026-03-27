@@ -19,10 +19,7 @@ export const Header = memo(function Header() {
         Перейти к содержимому
       </a>
       <div className="max-w-[1800px] mx-auto px-6 md:px-12 py-4 md:py-5 flex items-center justify-between">
-        <Link to="/" className="group flex flex-col">
-          <span className="text-[11px] tracking-[0.2em] uppercase text-muted-foreground mb-0.5">
-            Portfolio
-          </span>
+        <Link to="/" className="group">
           <span className="font-medium text-lg tracking-tight text-foreground group-hover:opacity-60 transition-opacity">
             {personalInfo.name}
           </span>
