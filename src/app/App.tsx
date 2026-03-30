@@ -37,11 +37,14 @@ function PageSkeleton() {
   );
 }
 
-/** При переходе на другую страницу — скролл наверх */
+/** При переходе на другую страницу — скролл наверх + хит Метрики */
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
+    if (typeof window.ym === 'function') {
+      window.ym(108302991, 'hit', window.location.href, { referrer: document.referrer });
+    }
   }, [pathname]);
   return null;
 }
