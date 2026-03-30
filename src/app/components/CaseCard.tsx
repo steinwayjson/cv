@@ -16,14 +16,14 @@ export const CaseCard = memo(function CaseCard({ caseStudy, featured }: CaseCard
       to={`/case/${caseStudy.id}`}
       className="group block overflow-hidden rounded-xl border border-border bg-card transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-sm md:rounded-2xl"
     >
-        <div className="relative overflow-hidden bg-accent aspect-[2.4/1]">
+        <div className="relative overflow-hidden bg-accent aspect-video">
         <img
           src={caseStudy.image}
           alt={caseStudy.title}
           loading="lazy"
           decoding="async"
-          width={800}
-          height={450}
+          width={1920}
+          height={1080}
           className="h-full w-full object-cover"
         />
         {/* KPI overlay */}

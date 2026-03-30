@@ -70,6 +70,11 @@ export const Footer = memo(function Footer() {
           <p>© {CURRENT_YEAR} {personalInfo.name}</p>
           <p>{personalInfo.title}</p>
         </div>
+
+        {/* Юридическая сноска */}
+        <p className="mt-6 text-[11px] leading-relaxed text-muted-foreground/40">
+          *Instagram и Facebook принадлежат компании Meta Platforms Inc., признанной экстремистской организацией и запрещённой на территории Российской Федерации.
+        </p>
       </div>
     </footer>
   );

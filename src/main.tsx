@@ -5,17 +5,26 @@ import "./styles/index.css";
 
 const root = document.getElementById("root")!;
 
+const app = (
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+
 if (root.children.length > 0) {
-  hydrateRoot(
-    root,
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
+  hydrateRoot(root, app);
 } else {
-  createRoot(root).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
+  createRoot(root).render(app);
 }
+
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    const loader = document.getElementById("app-loader");
+    if (loader) {
+      loader.classList.add("hidden");
+      setTimeout(() => loader.remove(), 200);
+    }
+    root.style.transition = "opacity 0.25s ease";
+    root.style.opacity = "1";
+  });
+});

@@ -24,12 +24,8 @@
     <title>Михайличенко Андрей — digital-маркетолог с техническим уклоном</title>
 
     <!-- Шрифт: preload критичных подмножеств -->
-    <link rel="preload" href="/fonts/inter-cyrillic-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-
-    <!-- Preload hero-изображение (десктоп) -->
-    <link rel="preload" href="/images/home-hero-white.webp" as="image" type="image/webp" media="(min-width: 768px) and (prefers-color-scheme: light)" />
-    <link rel="preload" href="/images/home-hero-black.webp" as="image" type="image/webp" media="(min-width: 768px) and (prefers-color-scheme: dark)" />
+    <link rel="preload" href="/fonts/inter-cyrillic-wght-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
 
     <!-- структура -->
     <script type="application/ld+json">
@@ -54,7 +50,35 @@
       // Предотвращение: класс dark до первого рендера
       (function(){var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.classList.add('dark');document.querySelector('meta[name=theme-color]').content='#09090b'}})();
     </script>
-    <div id="root"></div>
+    <style>
+      #app-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        transition: opacity 0.2s ease;
+      }
+      html.dark #app-loader { background: #09090b; }
+      #app-loader.hidden { opacity: 0; pointer-events: none; }
+      .spinner {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid rgba(0,0,0,0.08);
+        border-top-color: rgba(0,0,0,0.45);
+        animation: spin 0.7s linear infinite;
+      }
+      html.dark .spinner {
+        border-color: rgba(255,255,255,0.1);
+        border-top-color: rgba(255,255,255,0.5);
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+    <div id="app-loader"><div class="spinner"></div></div>
+    <div id="root" style="opacity:0"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

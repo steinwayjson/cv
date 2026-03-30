@@ -247,12 +247,12 @@ export function HomePage() {
                   className="group grid md:grid-cols-12 gap-6 md:gap-12 p-6 md:p-10 bg-card rounded-3xl border border-border hover:border-primary/30 transition-[border-color] duration-300"
                 >
                   {/* Изображение */}
-                  <div className="md:col-span-5 relative overflow-hidden rounded-2xl bg-accent aspect-[16/10]">
+                  <div className="md:col-span-5 relative overflow-hidden rounded-2xl bg-accent aspect-video">
                     <img
                       src={cs.image}
                       alt={cs.title}
-                      width={800}
-                      height={500}
+                      width={1920}
+                      height={1080}
                       loading="lazy"
                       decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"

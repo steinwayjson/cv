@@ -102,6 +102,8 @@ export interface CaseStudy {
   tags: string[];
   tools: string[];
   role: string;
+  /** Короткая строка-позиционирование над блоком роли */
+  profileTagline?: string;
   context: string;
   kpis: KPI[];
   startingPoint?: string[];
@@ -119,10 +121,16 @@ export interface CaseStudy {
   businessEffect?: KPI[];
   growthPlan?: GrowthHypothesis[];
   growthIdeas?: { intro: string; items: GrowthIdea[] };
-  /** Показывать блок результатов */
+  /* ─── Переключатели блоков (true по умолчанию) ─── */
   showResults?: boolean;
-  /** Показывать блок идей для роста */
+  showBusinessEffect?: boolean;
   showGrowthIdeas?: boolean;
+  showAntiCase?: boolean;
+  showGalleries?: boolean;
+  showMetrics?: boolean;
+  showClosure?: boolean;
+  showLearned?: boolean;
+
   learned: string[];
   organicComparison?: OrganicComparison;
   galleries?: GallerySection[];
@@ -131,8 +139,6 @@ export interface CaseStudy {
   firstTest?: FirstTestBlock;
   galleriesIntro?: string;
   antiCase?: AntiCase;
-  /** Показывать блок антикейса */
-  showAntiCase?: boolean;
   closureReason?: string[];
   closureChain?: ClosureStep[];
   legalNote?: string;
@@ -242,7 +248,7 @@ export const personalInfo: PersonalInfo = {
       period: "2019 — 2022",
       summary: "B2C-проекты: недвижимость, медицина, e-commerce, сервисные компании.",
       bullets: [
-        "Самостоятельное ведение performance-направления по ~18 клиентским проектам (VK, myTarget, FB Ads, Я.Директ), бюджеты до 300 000 ₽/мес",
+        "Самостоятельное ведение performance-направления по ~18 клиентским проектам (VK, myTarget, FB Ads*, Я.Директ), бюджеты до 300 000 ₽/мес",
         "A/B-тестирование креативов и офферов; разбор посадочных, корректировки для клиентов, разработка квизов",
         "Работа над улучшением конверсии посадочных страниц и логики воронки",
         "Интеграция рекламных кабинетов с CRM и аналитикой (Яндекс.Метрика, Google Analytics, GTM), подготовка отчётов для клиентов",

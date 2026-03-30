@@ -17,7 +17,7 @@ interface CaseLayoutProps {
 const cx = {
   outer: "mx-auto max-w-[1800px] px-6 md:px-12",
   text: "max-w-[700px]",
-  sectionY: "py-16 md:py-32",
+  sectionY: "py-12 md:py-20",
 };
 
 /* ─── Карточка подхода (аккордеон на мобилке) ─── */
@@ -120,7 +120,7 @@ function ContextAndApproachSection({
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-1 h-16 bg-primary/50" />
                   <h3 className="text-xs tracking-[0.25em] uppercase text-muted-foreground">
-                    Контекст
+                    Контекст и исходные данные
                   </h3>
                 </div>
               </div>
@@ -131,61 +131,51 @@ function ContextAndApproachSection({
                   {context}
                 </p>
               </div>
-            </div>
-          </div>
-        </FadeIn>
-      )}
 
-      {/* ── Исходные данные ── */}
-      {hasMetrics && (
-        <FadeIn className={`py-12 md:py-20 ${cx.outer}`}>
-          <div className="mb-12">
-            <div className="flex items-center gap-6 mb-6">
-              <div className="w-1 h-12 bg-primary" />
-              <h3 className="text-xs tracking-[0.25em] uppercase text-muted-foreground">
-                Исходные данные
-              </h3>
-            </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
-            {startingPoint!.map((item, i) => {
-              const colonIdx = item.indexOf(":");
-              const dashIdx = item.indexOf("—");
-              const splitIdx = colonIdx > 0 ? colonIdx : dashIdx > 0 ? dashIdx : -1;
-              const sep = colonIdx > 0 ? ":" : "—";
+              {/* Исходные данные — под контекстом */}
+              {hasMetrics && (
+                <div className={`grid gap-4 mt-6 grid-cols-1 sm:grid-cols-2 ${startingPoint!.length === 3 ? "md:grid-cols-3" : ""}`}>
+                  {startingPoint!.map((item, i) => {
+                    const colonIdx = item.indexOf(":");
+                    const dashIdx = item.indexOf("—");
+                    const splitIdx = colonIdx > 0 ? colonIdx : dashIdx > 0 ? dashIdx : -1;
+                    const sep = colonIdx > 0 ? ":" : "—";
 
-              if (splitIdx > 0) {
-                const label = item.slice(0, splitIdx).trim();
-                const value = item.slice(splitIdx + sep.length).trim();
-                return (
-                  <div
-                    key={i}
-                    className="p-8 rounded-3xl bg-background border-l-4 border-t border-r border-b border-orange-500 hover:shadow-lg transition-shadow duration-500"
-                  >
-                    <div className="text-4xl md:text-5xl font-medium text-orange-500 mb-4">
-                      {value}
-                    </div>
-                    <h4 className="text-base md:text-lg font-medium mb-2">{label}</h4>
-                  </div>
-                );
-              }
+                    if (splitIdx > 0) {
+                      const label = item.slice(0, splitIdx).trim();
+                      const value = item.slice(splitIdx + sep.length).trim();
+                      return (
+                        <div
+                          key={i}
+                          className="p-6 md:p-8 rounded-3xl bg-background border-l-4 border-t border-r border-b border-orange-500 hover:shadow-lg transition-shadow duration-500"
+                        >
+                          <div className="text-2xl md:text-4xl font-medium text-orange-500 mb-3">
+                            {value}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{label}</p>
+                        </div>
+                      );
+                    }
 
-              return (
-                <div
-                  key={i}
-                  className="p-8 rounded-3xl bg-background border-l-4 border-t border-r border-b border-orange-500 hover:shadow-lg transition-shadow duration-500"
-                >
-                  <p className="text-base font-medium text-foreground/80">{item}</p>
+                    return (
+                      <div
+                        key={i}
+                        className="p-6 md:p-8 rounded-3xl bg-background border-l-4 border-t border-r border-b border-orange-500 hover:shadow-lg transition-shadow duration-500"
+                      >
+                        <p className="text-base font-medium text-foreground/80">{item}</p>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              )}
+            </div>
           </div>
         </FadeIn>
       )}
 
       {/* ── Подход + карточки стратегий ── */}
       {(approach || activeGroups.length > 0) && (
-        <FadeIn as="section" className={`py-16 md:py-24 ${cx.outer}`}>
+        <FadeIn as="section" className={`py-12 md:py-20 ${cx.outer}`}>
           {/* Заголовок */}
           <div className="mb-12">
             <div className="flex items-center gap-6 mb-6">
@@ -303,7 +293,7 @@ export const CaseLayout = memo(function CaseLayout({
       {/* ═══════════  Содержимое  ═══════════ */}
       <article>
         {/* ─── Роль ─── */}
-        <FadeIn className={`py-16 md:py-24 ${cx.outer}`} as="section">
+        <FadeIn className={`py-12 md:py-20 ${cx.outer}`} as="section">
           <div className="grid md:grid-cols-12 gap-8 md:gap-12">
             <div className="md:col-span-3">
               <div className="sticky top-32">
@@ -316,6 +306,11 @@ export const CaseLayout = memo(function CaseLayout({
               </div>
             </div>
             <div className="md:col-span-9">
+              {caseStudy.profileTagline && (
+                <p className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-primary">
+                  {caseStudy.profileTagline}
+                </p>
+              )}
               <p className="text-lg md:text-xl leading-relaxed text-muted-foreground">
                 {caseStudy.role}
               </p>
@@ -337,9 +332,9 @@ export const CaseLayout = memo(function CaseLayout({
         )}
 
         {/* ─── Галереи / до-после ─── */}
-        {visibleGalleries && visibleGalleries.length > 0 && (
+        {caseStudy.showGalleries !== false && visibleGalleries && visibleGalleries.length > 0 && (
             <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
-              <div className="flex items-baseline gap-6 md:gap-8 mb-12 md:mb-16">
+              <div className="flex items-baseline gap-6 md:gap-8 mb-8 md:mb-12">
                 <h2 className="text-3xl md:text-4xl font-medium tracking-tight">
                   Реализация
                 </h2>
@@ -349,7 +344,7 @@ export const CaseLayout = memo(function CaseLayout({
         )}
 
         {/* ─── Метрики и аналитика ─── */}
-        {(caseStudy.organicComparison || (caseStudy.analyticsScreenshots && caseStudy.analyticsScreenshots.items.length > 0)) && (
+        {caseStudy.showMetrics !== false && (caseStudy.organicComparison || (caseStudy.analyticsScreenshots && caseStudy.analyticsScreenshots.items.length > 0)) && (
           <FadeIn as="section" className={`${cx.sectionY}`}>
             <div className={cx.outer}>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-medium mb-3 tracking-tight">
@@ -378,7 +373,7 @@ export const CaseLayout = memo(function CaseLayout({
                       <span className="font-medium">{item.label}</span>
                       <span className="text-right text-muted-foreground">{item.before}</span>
                       <span className="text-right font-medium">{item.after}</span>
-                      <span className="text-right font-medium text-primary flex items-center justify-end gap-1">{item.multiplier}</span>
+                      <span className="text-right font-medium text-emerald-500 flex items-center justify-end gap-1">{item.multiplier}</span>
                     </div>
                   ))}
                 </div>
@@ -520,11 +515,11 @@ export const CaseLayout = memo(function CaseLayout({
         )}
 
         {/* ─── Бизнес-эффект ─── */}
-        {caseStudy.businessEffect && caseStudy.businessEffect.length > 0 && (
+        {caseStudy.showBusinessEffect !== false && caseStudy.businessEffect && caseStudy.businessEffect.length > 0 && (
           <FadeIn as="section" className={`bg-accent/30 ${cx.sectionY}`}>
             <div className={cx.outer}>
-              <div className="flex items-baseline gap-6 md:gap-8 mb-10 md:mb-14">
-                <span className="text-5xl font-light text-muted-foreground/20 select-none">
+              <div className="flex items-baseline gap-6 md:gap-8 mb-8 md:mb-12">
+                <span className="text-5xl font-light text-amber-400 select-none">
                   ★
                 </span>
                 <h2 className="text-2xl md:text-4xl font-medium tracking-tight">
@@ -534,7 +529,7 @@ export const CaseLayout = memo(function CaseLayout({
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:gap-6">
                 {caseStudy.businessEffect.map((kpi, i) => (
                   <div key={i} className="p-6 md:p-8 bg-card border border-border rounded-2xl">
-                    <p className="text-2xl md:text-3xl font-medium mb-2">
+                    <p className="text-lg md:text-2xl font-medium mb-2">
                       {kpi.value}
                     </p>
                     <p className="text-sm text-muted-foreground leading-snug">
@@ -593,10 +588,10 @@ export const CaseLayout = memo(function CaseLayout({
         )}
 
         {/* ─── Причина закрытия ─── */}
-        {caseStudy.closureChain && caseStudy.closureChain.length > 0 ? (
-          <FadeIn as="section" className="border-t border-border pt-[55px] pb-[34px] md:pt-[89px] md:pb-[55px]">
+        {caseStudy.showClosure !== false && caseStudy.closureChain && caseStudy.closureChain.length > 0 ? (
+          <FadeIn as="section" className="border-t border-border py-12 md:py-20">
             <div className={cx.outer}>
-              <h2 className="mb-[34px] text-[1.625rem] font-bold text-foreground">
+              <h2 className="mb-8 text-[1.625rem] font-bold text-foreground">
                 Почему проект закрылся
               </h2>
               <div className="flex flex-col items-center gap-3 md:flex-row md:items-start md:gap-0">
@@ -625,7 +620,7 @@ export const CaseLayout = memo(function CaseLayout({
               </div>
             </div>
           </FadeIn>
-        ) : caseStudy.closureReason && caseStudy.closureReason.length > 0 ? (
+        ) : caseStudy.showClosure !== false && caseStudy.closureReason && caseStudy.closureReason.length > 0 ? (
           <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
             <div className="rounded-2xl border border-border bg-accent px-6 py-7 md:px-8 md:py-8">
               <h2 className="mb-[13px] text-[1.25rem] font-bold text-foreground">
@@ -643,7 +638,7 @@ export const CaseLayout = memo(function CaseLayout({
         ) : null}
 
         {/* ─── Выводы ─── */}
-        {caseStudy.learned.length > 0 && (
+        {caseStudy.showLearned !== false && caseStudy.learned.length > 0 && (
           <FadeIn as="section" className={`${cx.sectionY} ${cx.outer}`}>
             <div className="flex items-center gap-4 mb-12">
               <Lightbulb className="w-8 h-8 text-primary" />
@@ -670,17 +665,8 @@ export const CaseLayout = memo(function CaseLayout({
           </FadeIn>
         )}
 
-        {/* ─── Юридическая сноска ─── */}
-        {caseStudy.legalNote && (
-          <div className={`${cx.outer} pb-[21px]`}>
-            <p className="text-[11px] leading-[1.618] text-muted-foreground/50">
-              {caseStudy.legalNote}
-            </p>
-          </div>
-        )}
-
         {/* ═══════════  Блок «Связаться»  ═══════════ */}
-        <section className="py-16 md:py-24 border-t border-border">
+        <section className="py-12 md:py-20 border-t border-border">
           <div className={`text-center ${cx.outer}`}>
             <h2 className="text-2xl md:text-3xl font-medium mb-4">
               Есть вопросы?

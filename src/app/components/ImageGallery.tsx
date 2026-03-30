@@ -37,7 +37,7 @@ export const ImageGallery = memo(function ImageGallery({
               {gallery.title}
             </h3>
 
-            {gallery.description && gallery.layout !== "before-after" && (
+            {gallery.description && (
               <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
                 {gallery.description}
               </p>
@@ -48,11 +48,10 @@ export const ImageGallery = memo(function ImageGallery({
             )}
 
             {gallery.layout === "before-after" && gallery.items.length >= 2 && (
-              <div className="mx-auto mt-4 max-w-[800px]">
+              <div className="mt-4 max-w-[800px]">
                 <BeforeAfterPreview
                   before={gallery.items[0]}
                   after={gallery.items[1]}
-                  description={gallery.description}
                 />
               </div>
             )}

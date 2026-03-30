@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, TrendingUp, Tag, Calendar } from "lucide-react";
+import { ArrowLeft, Tag, Calendar } from "lucide-react";
 import type { CaseStudy } from "@/data/portfolioData";
 
 interface HeroCaseProps {
@@ -36,7 +36,7 @@ export const HeroCase = memo(function HeroCase({ caseStudy }: HeroCaseProps) {
               </span>
             </div>
 
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-6 leading-tight">
+            <h1 className="text-2xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-6 leading-tight">
               {caseStudy.title}
             </h1>
 
@@ -88,8 +88,7 @@ export const HeroCase = memo(function HeroCase({ caseStudy }: HeroCaseProps) {
                   key={i}
                   className="p-6 bg-accent border border-border rounded-2xl"
                 >
-                  <TrendingUp className="w-6 h-6 mb-3 text-primary" />
-                  <div className="text-3xl md:text-4xl font-medium mb-2">
+                  <div className="text-2xl md:text-4xl font-medium mb-2">
                     {kpi.value}
                   </div>
                   <div className="text-sm text-muted-foreground">
