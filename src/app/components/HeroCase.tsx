@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Tag, Calendar } from "lucide-react";
+import { ArrowLeft, TrendingUp, Tag, Calendar } from "lucide-react";
 import type { CaseStudy } from "@/data/portfolioData";
 
 interface HeroCaseProps {
@@ -88,6 +88,7 @@ export const HeroCase = memo(function HeroCase({ caseStudy }: HeroCaseProps) {
                   key={i}
                   className="p-6 bg-accent border border-border rounded-2xl"
                 >
+                  <TrendingUp className="w-6 h-6 mb-3 text-emerald-500" />
                   <div className="text-2xl md:text-4xl font-medium mb-2">
                     {kpi.value}
                   </div>

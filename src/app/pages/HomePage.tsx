@@ -1,6 +1,6 @@
 import { personalInfo, caseStudies } from "@/data/portfolioData";
 import { FadeIn } from "@/app/components/FadeIn";
-import { Mail, MapPin, Phone, FileText, ArrowUpRight } from "lucide-react";
+import { Mail, MapPin, Phone, FileText, ArrowUpRight, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function HomePage() {
@@ -283,6 +283,7 @@ export function HomePage() {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
                         {cs.kpis.slice(0, 3).map((kpi) => (
                           <div key={kpi.label} className="p-3 md:p-4 bg-accent/50 rounded-xl">
+                            <TrendingUp className="w-4 h-4 mb-1.5 text-emerald-500" />
                             <div className="text-xl md:text-2xl font-medium mb-1">{kpi.value}</div>
                             <div className="text-[11px] md:text-xs text-muted-foreground">{kpi.label}</div>
                           </div>
