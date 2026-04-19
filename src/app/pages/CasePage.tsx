@@ -27,6 +27,50 @@ export function CasePage() {
 
       const ogUrl = document.querySelector('meta[property="og:url"]');
       if (ogUrl) ogUrl.setAttribute("content", `https://andrey-mikhaylichenko.ru/case/${caseStudy.id}`);
+
+      // JSON-LD: CreativeWork + BreadcrumbList
+      const schema = {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "CreativeWork",
+            "@id": `https://andrey-mikhaylichenko.ru/case/${caseStudy.id}#case`,
+            "name": caseStudy.title,
+            "description": caseStudy.context,
+            "url": `https://andrey-mikhaylichenko.ru/case/${caseStudy.id}`,
+            "image": `https://andrey-mikhaylichenko.ru${caseStudy.image}`,
+            "about": { "@type": "Thing", "name": caseStudy.niche },
+            "keywords": caseStudy.tools.join(", "),
+            "author": { "@id": "https://andrey-mikhaylichenko.ru/#person" },
+            "creator": { "@id": "https://andrey-mikhaylichenko.ru/#person" },
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Главная",
+                "item": "https://andrey-mikhaylichenko.ru",
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": caseStudy.title,
+                "item": `https://andrey-mikhaylichenko.ru/case/${caseStudy.id}`,
+              },
+            ],
+          },
+        ],
+      };
+      let schemaTag = document.getElementById('case-schema') as HTMLScriptElement | null;
+      if (!schemaTag) {
+        schemaTag = document.createElement('script');
+        schemaTag.id = 'case-schema';
+        schemaTag.type = 'application/ld+json';
+        document.head.appendChild(schemaTag);
+      }
+      schemaTag.textContent = JSON.stringify(schema);
     }
     return () => {
       document.title = "Михайличенко Андрей — digital-маркетолог с техническим уклоном";
@@ -40,6 +84,7 @@ export function CasePage() {
       if (ogDesc) ogDesc.setAttribute("content", "Портфолио и кейсы: performance-маркетинг, воронки, аналитика, digital-инфраструктура.");
       const ogUrl = document.querySelector('meta[property="og:url"]');
       if (ogUrl) ogUrl.setAttribute("content", "https://andrey-mikhaylichenko.ru/");
+      document.getElementById('case-schema')?.remove();
     };
   }, [caseStudy]);
 

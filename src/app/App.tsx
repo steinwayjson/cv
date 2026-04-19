@@ -4,6 +4,7 @@ import { Header } from "@/app/components/Header";
 import { Footer } from "@/app/components/Footer";
 import { ErrorBoundary } from "@/app/components/ErrorBoundary";
 import { HomePage } from "@/app/pages/HomePage";
+import { capturePageview } from "@/lib/analytics";
 
 const CasePage = lazy(() =>
   import("@/app/pages/CasePage").then((m) => ({ default: m.CasePage })),
@@ -37,7 +38,7 @@ function PageSkeleton() {
   );
 }
 
-/** При переходе на другую страницу — скролл наверх + хит Метрики */
+/** При переходе на другую страницу — скролл наверх + хит Метрики + PostHog pageview */
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -45,6 +46,7 @@ function ScrollToTop() {
     if (typeof window.ym === 'function') {
       window.ym(108302991, 'hit', window.location.href, { referrer: document.referrer });
     }
+    capturePageview();
   }, [pathname]);
   return null;
 }
