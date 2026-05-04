@@ -97,11 +97,51 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+export interface LetterParts {
+  subject?: string;
+  body: string;
+  ps?: string;
+}
+
+export function parseLetterParts(value: unknown): LetterParts | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const cleaned = value
+    .replace(/<think>[\s\S]*?<\/think>/g, '')
+    .replace(/```json/g, '')
+    .replace(/```/g, '')
+    .trim();
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const obj = parsed as Record<string, unknown>;
+      // {subject, body, ps} — формат копирайтера
+      if (typeof obj.body === 'string' && obj.body.trim()) {
+        return {
+          subject: typeof obj.subject === 'string' ? obj.subject.trim() : undefined,
+          body: obj.body.trim(),
+          ps: typeof obj.ps === 'string' && obj.ps.trim() ? obj.ps.trim() : undefined,
+        };
+      }
+      // {letter}/{text}/{content}
+      const extracted = obj.letter ?? obj.text ?? obj.content;
+      if (typeof extracted === 'string' && extracted.trim()) return { body: extracted.trim() };
+    }
+  } catch { /* не JSON */ }
+  return { body: cleaned };
+}
+
+function extractLetterText(value: unknown): string | null {
+  const parts = parseLetterParts(value);
+  if (!parts) return null;
+  const lines = [parts.subject ? `Тема: ${parts.subject}` : null, parts.body, parts.ps ? `P.S. ${parts.ps}` : null].filter(Boolean);
+  return lines.join('\n\n');
+}
+
 function normalizeLetterRow(row: any): Partial<Vacancy> {
   if (!row) return {};
   return {
-    ...(row.letter != null ? { letter: row.letter } : {}),
-    ...(row.letter_edited != null ? { letter_edited: row.letter_edited } : {}),
+    ...(row.letter != null ? { letter: extractLetterText(row.letter) ?? row.letter } : {}),
+    ...(row.letter_edited != null ? { letter_edited: extractLetterText(row.letter_edited) ?? row.letter_edited } : {}),
     ...(row.model != null ? { model: row.model } : {}),
   };
 }
@@ -109,11 +149,22 @@ function normalizeLetterRow(row: any): Partial<Vacancy> {
 function getTextFromLog(log: any): string | null {
   if (!log) return null;
   if (typeof log.raw_output === 'string' && log.raw_output.trim()) {
-    return log.raw_output
+    const cleaned = log.raw_output
       .replace(/<think>[\s\S]*?<\/think>/g, '')
       .replace(/```json/g, '')
       .replace(/```/g, '')
       .trim();
+    // Если raw_output — JSON-строка (напр. от copywriter), пробуем извлечь текст письма
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const extracted = (parsed as Record<string, unknown>).letter
+          ?? (parsed as Record<string, unknown>).text
+          ?? (parsed as Record<string, unknown>).content;
+        if (typeof extracted === 'string' && extracted.trim()) return extracted.trim();
+      }
+    } catch { /* не JSON — используем как есть */ }
+    return cleaned;
   }
   if (typeof log.parsed_output === 'string' && log.parsed_output.trim()) {
     return log.parsed_output.trim();
@@ -155,7 +206,7 @@ export const db = {
           .from('vacancies')
           .select('source')
           .not('source', 'is', null)
-          .limit(5000);
+          .limit(200);
         if (error) throw error;
         return Array.from(
           new Map((data || []).map((row: any) => [String(row.source).toLowerCase(), String(row.source)])).values()
@@ -187,9 +238,8 @@ export const db = {
 
         const { data: agentLogs, error: logsError } = await supabase
           .from('analysis_log')
-          .select('agent, prompt_key, raw_output, parsed_output')
+          .select('agent, prompt_key, raw_output, parsed_output, error')
           .eq('vacancy_id', id)
-          .is('error', null)
           .order('created_at', { ascending: false })
           .limit(20);
         if (logsError) throw logsError;
@@ -226,7 +276,8 @@ export const db = {
         if (status === 'rejected' && lastStage) payload.last_stage = lastStage;
         // Если выходим из rejected — сбрасываем last_stage
         if (status !== 'rejected') payload.last_stage = null;
-        await supabase.from('vacancies').update(payload).eq('id', id);
+        const { error } = await supabase.from('vacancies').update(payload).eq('id', id);
+        if (error) throw error;
         return;
       }
       await delay(100);
@@ -240,11 +291,12 @@ export const db = {
 
     async updateNotes(id: string, notes: string, nextAction?: string, nextActionAt?: string): Promise<void> {
       if (supabase) {
-        await supabase.from('vacancies').update({
+        const { error } = await supabase.from('vacancies').update({
           notes,
           next_action: nextAction,
           next_action_at: nextActionAt,
         }).eq('id', id);
+        if (error) throw error;
         return;
       }
       await delay(100);
@@ -258,7 +310,8 @@ export const db = {
 
     async updateLetter(id: string, letterEdited: string): Promise<void> {
       if (supabase) {
-        await supabase.from('vacancy_analysis').update({ letter_edited: letterEdited }).eq('vacancy_id', id);
+        const { error } = await supabase.from('vacancy_analysis').update({ letter_edited: letterEdited }).eq('vacancy_id', id);
+        if (error) throw error;
         return;
       }
       await delay(100);
@@ -270,7 +323,8 @@ export const db = {
 
     async delete(id: string): Promise<void> {
       if (supabase) {
-        await supabase.from('vacancies').delete().eq('id', id);
+        const { error } = await supabase.from('vacancies').delete().eq('id', id);
+        if (error) throw error;
         return;
       }
       await delay(100);
@@ -329,7 +383,7 @@ export const db = {
           .from('pipeline_stages')
           .select('source')
           .not('source', 'is', null)
-          .limit(5000);
+          .limit(200);
         if (error) throw error;
         return Array.from(
           new Map((data || []).map((row: any) => [String(row.source).toLowerCase(), String(row.source)])).values()
@@ -348,10 +402,8 @@ export const db = {
 
     async updateStages(stages: PipelineStage[]): Promise<void> {
       if (supabase) {
-        for (const stage of stages) {
-          const { error } = await supabase.from('pipeline_stages').upsert(stage);
-          if (error) throw error;
-        }
+        const { error } = await supabase.from('pipeline_stages').upsert(stages);
+        if (error) throw error;
         return;
       }
       await delay(100);
@@ -526,10 +578,11 @@ export const db = {
     async update(config: Partial<AgentConfig>): Promise<void> {
       if (supabase) {
         const { id, ...fields } = config;
-        await supabase.from('agent_configs').upsert(
+        const { error } = await supabase.from('agent_configs').upsert(
           { name: 'scorer', ...fields, updated_at: new Date().toISOString() },
           { onConflict: 'name' },
         );
+        if (error) throw error;
         return;
       }
       await delay(100);
@@ -551,7 +604,8 @@ export const db = {
       if (supabase) {
         const { id, ...fields } = profile;
         if (!id) return;
-        await supabase.from('profile').update(fields).eq('id', id);
+        const { error } = await supabase.from('profile').update(fields).eq('id', id);
+        if (error) throw error;
         return;
       }
       await delay(100);
@@ -762,6 +816,14 @@ export const db = {
       await delay(100);
       return [];
     },
+
+    async delete(id: string): Promise<void> {
+      if (supabase) {
+        const { error } = await supabase.from('analysis_log').delete().eq('id', id);
+        if (error) throw error;
+        return;
+      }
+    },
   },
 
   tgChannels: {
@@ -795,14 +857,16 @@ export const db = {
 
     async toggle(id: string, isActive: boolean): Promise<void> {
       if (supabase) {
-        await supabase.from('tg_channels').update({ is_active: isActive }).eq('id', id);
+        const { error } = await supabase.from('tg_channels').update({ is_active: isActive }).eq('id', id);
+        if (error) throw error;
         return;
       }
     },
 
     async delete(id: string): Promise<void> {
       if (supabase) {
-        await supabase.from('tg_channels').delete().eq('id', id);
+        const { error } = await supabase.from('tg_channels').delete().eq('id', id);
+        if (error) throw error;
         return;
       }
       await delay(100);

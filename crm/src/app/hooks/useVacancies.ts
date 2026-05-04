@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { db } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { Vacancy } from '../lib/types';
@@ -30,6 +31,7 @@ export function useUpdateVacancyStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vacancies'] });
     },
+    onError: (e: Error) => toast.error(`Ошибка обновления статуса: ${e.message}`),
   });
 }
 
@@ -46,6 +48,7 @@ export function useUpdateVacancyNotes() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vacancies'] });
     },
+    onError: (e: Error) => toast.error(`Ошибка сохранения: ${e.message}`),
   });
 }
 
@@ -58,6 +61,7 @@ export function useUpdateVacancyLetter() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vacancies'] });
     },
+    onError: (e: Error) => toast.error(`Ошибка сохранения письма: ${e.message}`),
   });
 }
 
@@ -69,5 +73,6 @@ export function useDeleteVacancy() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vacancies'] });
     },
+    onError: (e: Error) => toast.error(`Ошибка удаления: ${e.message}`),
   });
 }

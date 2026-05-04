@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, Zap, CheckCircle, XCircle, Loader, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
+import { Modal } from '../ui/Modal';
 import { useTgChannels } from '../../hooks/useTgChannels';
 import { useParserRuns, useParserTrigger } from '../../hooks/useParserRuns';
 
@@ -30,6 +31,7 @@ export function TgParserSection() {
 
   const [newUsername, setNewUsername] = useState('');
   const [newTitle, setNewTitle] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; username: string } | null>(null);
 
   const handleAdd = () => {
     const username = newUsername.replace(/^@/, '').trim();
@@ -48,10 +50,15 @@ export function TgParserSection() {
   };
 
   const handleDelete = (id: string, username: string) => {
-    if (!confirm(`Удалить канал @${username}?`)) return;
+    setPendingDelete({ id, username });
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    const { id, username } = pendingDelete;
     deleteChannel(id, {
-      onSuccess: () => toast.success(`Канал @${username} удалён`),
-      onError: (err) => toast.error(`Ошибка: ${err.message}`),
+      onSuccess: () => { toast.success(`Канал @${username} удалён`); setPendingDelete(null); },
+      onError: (err) => { toast.error(`Ошибка: ${err.message}`); setPendingDelete(null); },
     });
   };
 
@@ -276,5 +283,16 @@ export function TgParserSection() {
         </div>
       )}
     </div>
+
+      <Modal
+        isOpen={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        title="Удалить канал?"
+        onConfirm={confirmDelete}
+        confirmText="Удалить"
+        cancelText="Отмена"
+      >
+        <p>Удалить канал @{pendingDelete?.username}? История парсинга для этого канала будет потеряна.</p>
+      </Modal>
   );
 }

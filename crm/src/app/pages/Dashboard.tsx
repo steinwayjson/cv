@@ -16,7 +16,7 @@ import type { FilterValues } from '../components/dashboard/Filters';
 export function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { data: vacancies = [], isLoading } = useVacancies();
+  const { data: vacancies = [], isLoading, isError } = useVacancies();
   const reanalyze = useReanalyze();
   const [selectedVacancy, setSelectedVacancy] = useState<Vacancy | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -131,6 +131,11 @@ export function Dashboard() {
 
       {isLoading ? (
         <TableSkeleton />
+      ) : isError ? (
+        <div className="text-center py-12">
+          <p className="text-lg text-red-500 mb-2">Не удалось загрузить вакансии</p>
+          <p className="text-sm text-gray-500">Проверьте подключение к интернету и обновите страницу</p>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           {vacancies.length === 0 ? (

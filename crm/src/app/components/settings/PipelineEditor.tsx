@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, X } from 'lucide-react';
+import { Modal } from '../ui/Modal';
 import {
   usePipelineStrict,
   useUpdatePipeline,
@@ -113,6 +114,7 @@ export function PipelineEditor() {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState(PRESET_COLORS[0]);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // Синхронизируем локальный стейт при загрузке данных
   useEffect(() => {
@@ -144,9 +146,14 @@ export function PipelineEditor() {
   };
 
   const handleDelete = (id: string) => {
-    deleteStage.mutate(id, {
-      onSuccess: () => toast.success('Этап удалён'),
-      onError: () => toast.error('Ошибка удаления'),
+    setPendingDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDeleteId) return;
+    deleteStage.mutate(pendingDeleteId, {
+      onSuccess: () => { toast.success('Этап удалён'); setPendingDeleteId(null); },
+      onError: () => { toast.error('Ошибка удаления'); setPendingDeleteId(null); },
     });
   };
 
@@ -297,6 +304,17 @@ export function PipelineEditor() {
           + Добавить этап
         </button>
       )}
+
+      <Modal
+        isOpen={!!pendingDeleteId}
+        onClose={() => setPendingDeleteId(null)}
+        title="Удалить этап?"
+        onConfirm={confirmDelete}
+        confirmText="Удалить"
+        cancelText="Отмена"
+      >
+        <p>Вакансии в этом этапе не удалятся — только настройка воронки.</p>
+      </Modal>
     </div>
   );
 }

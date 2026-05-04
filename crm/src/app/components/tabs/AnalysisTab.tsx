@@ -6,6 +6,112 @@ interface AnalysisTabProps {
   vacancy: Vacancy;
 }
 
+function AnalyzerDisplay({ text }: { text: string }) {
+  let data: Record<string, unknown> | null = null;
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) data = parsed as Record<string, unknown>;
+  } catch { /* не JSON */ }
+
+  if (!data) {
+    return <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{text}</p>;
+  }
+
+  const comment = typeof data.comment === 'string' ? data.comment : null;
+  const advice = typeof data.advice === 'string' ? data.advice : null;
+  const greenFlags = Array.isArray(data.green_flags) ? data.green_flags as string[] : null;
+  const redFlags = Array.isArray(data.red_flags) ? data.red_flags as string[] : null;
+  const companyProduct = typeof data.company_product === 'string' ? data.company_product : null;
+  const companyPains = typeof data.company_pains === 'string' ? data.company_pains : null;
+  const brief = data.brief && typeof data.brief === 'object' ? data.brief as Record<string, unknown> : null;
+
+  return (
+    <div className="space-y-4 text-sm">
+      {comment && (
+        <div>
+          <div className="font-medium text-gray-900 dark:text-gray-100 mb-1">Вывод</div>
+          <p className="text-gray-700 dark:text-gray-300">{comment}</p>
+        </div>
+      )}
+
+      {(greenFlags || redFlags) && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {greenFlags && greenFlags.length > 0 && (
+            <div>
+              <div className="font-medium text-green-700 dark:text-green-400 mb-1">✓ Плюсы</div>
+              <ul className="space-y-1">
+                {greenFlags.map((f, i) => (
+                  <li key={i} className="text-xs text-gray-700 dark:text-gray-300 leading-snug">{f}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {redFlags && redFlags.length > 0 && (
+            <div>
+              <div className="font-medium text-red-600 dark:text-red-400 mb-1">✕ Риски</div>
+              <ul className="space-y-1">
+                {redFlags.map((f, i) => (
+                  <li key={i} className="text-xs text-gray-700 dark:text-gray-300 leading-snug">{f}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {advice && (
+        <div>
+          <div className="font-medium text-gray-900 dark:text-gray-100 mb-1">Совет перед интервью</div>
+          <p className="text-gray-700 dark:text-gray-300">{advice}</p>
+        </div>
+      )}
+
+      {brief && (
+        <div className="border border-gray-200 dark:border-gray-700 rounded p-3 space-y-2">
+          <div className="font-medium text-gray-900 dark:text-gray-100 text-xs uppercase tracking-wide">Бриф для письма</div>
+          {typeof brief.tone === 'string' && (
+            <p className="text-xs text-gray-600 dark:text-gray-400"><span className="font-medium">Тон:</span> {brief.tone}</p>
+          )}
+          {Array.isArray(brief.hooks) && (brief.hooks as string[]).length > 0 && (
+            <div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-0.5">Хуки:</div>
+              <ul className="space-y-0.5">
+                {(brief.hooks as string[]).map((h, i) => (
+                  <li key={i} className="text-xs text-gray-600 dark:text-gray-400">– {h}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {Array.isArray(brief.avoid) && (brief.avoid as string[]).length > 0 && (
+            <div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-0.5">Не упоминать:</div>
+              <ul className="space-y-0.5">
+                {(brief.avoid as string[]).map((a, i) => (
+                  <li key={i} className="text-xs text-gray-600 dark:text-gray-400">– {a}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {companyProduct && (
+        <div>
+          <div className="font-medium text-gray-900 dark:text-gray-100 mb-1">О компании</div>
+          <p className="text-gray-700 dark:text-gray-300 text-xs">{companyProduct}</p>
+        </div>
+      )}
+
+      {companyPains && (
+        <div>
+          <div className="font-medium text-gray-900 dark:text-gray-100 mb-1">Боль компании</div>
+          <p className="text-gray-700 dark:text-gray-300 text-xs">{companyPains}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AnalysisTab({ vacancy }: AnalysisTabProps) {
   const { data: logs = [], isLoading: logsLoading } = useVacancyAnalysisLog(
     vacancy.id,
@@ -64,7 +170,7 @@ export function AnalysisTab({ vacancy }: AnalysisTabProps) {
         {logsLoading ? (
           <p className="text-sm text-gray-500">Loading analyzer result...</p>
         ) : analyzerText ? (
-          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{analyzerText}</p>
+          <AnalyzerDisplay text={analyzerText} />
         ) : (
           <p className="text-sm text-gray-500">No analyzer result saved yet.</p>
         )}

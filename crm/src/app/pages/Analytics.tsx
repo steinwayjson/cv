@@ -15,7 +15,7 @@ import {
 } from 'recharts';
 
 export function Analytics() {
-  const { data: vacancies = [] } = useVacancies();
+  const { data: vacancies = [], isError } = useVacancies();
   const sources = useDistinctSources();
   const [period, setPeriod] = useState<'week' | 'month' | 'all'>('month');
   const [funnelSource, setFunnelSource] = useState<string | null>(null);
@@ -83,6 +83,12 @@ export function Analytics() {
   return (
     <div className="max-w-7xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Аналитика</h1>
+
+      {isError && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-600 dark:text-red-400 text-sm">
+          Не удалось загрузить данные. Проверьте подключение и обновите страницу.
+        </div>
+      )}
 
       {/* Воронка с переключателем источника */}
       <div className="mb-6 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">

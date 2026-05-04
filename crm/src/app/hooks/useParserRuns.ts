@@ -9,6 +9,7 @@ export function useParserRuns() {
     queryKey: ['parser-runs'],
     queryFn: () => db.parserRuns.getRecent(10),
     refetchInterval: 30_000, // обновляем каждые 30 секунд
+    refetchIntervalInBackground: false,
   });
 
   const lastRun = query.data?.[0] ?? null;

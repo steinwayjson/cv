@@ -31,16 +31,19 @@ export function ActionsTab({ vacancy, onDelete }: ActionsTabProps) {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (notes !== vacancy.notes || nextAction !== vacancy.next_action || nextActionAt !== (vacancy.next_action_at?.slice(0, 10) || '')) {
-        updateNotes.mutate(
-          { id: vacancy.id, notes, nextAction, nextActionAt: nextActionAt || undefined },
-          { onSuccess: () => toast.success('Сохранено') }
-        );
-      }
+      const hasChanges =
+        notes !== (vacancy.notes ?? '') ||
+        nextAction !== (vacancy.next_action ?? '') ||
+        nextActionAt !== (vacancy.next_action_at?.slice(0, 10) ?? '');
+      if (!hasChanges) return;
+      updateNotes.mutate(
+        { id: vacancy.id, notes, nextAction, nextActionAt: nextActionAt || undefined },
+        { onSuccess: () => toast.success('Сохранено') }
+      );
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [notes, nextAction, nextActionAt]);
+  }, [notes, nextAction, nextActionAt, vacancy.id, vacancy.notes, vacancy.next_action, vacancy.next_action_at, updateNotes]);
 
   const handleDelete = () => {
     deleteVacancy.mutate(vacancy.id, {

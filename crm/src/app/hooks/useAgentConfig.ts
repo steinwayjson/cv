@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { db } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { AgentConfig } from '../lib/types';
@@ -17,5 +18,6 @@ export function useUpdateAgentConfig() {
   return useMutation({
     mutationFn: (config: Partial<AgentConfig>) => db.agentConfig.update(config),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['agentConfig'] }),
+    onError: (e: Error) => toast.error(`Ошибка сохранения конфигурации: ${e.message}`),
   });
 }

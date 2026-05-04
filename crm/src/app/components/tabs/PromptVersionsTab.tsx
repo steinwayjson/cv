@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Trash2 } from 'lucide-react';
 import { usePromptVersions } from '../../hooks/usePrompts';
-import { useVacancyAnalysisLog } from '../../hooks/useAnalysisLog';
+import { useVacancyAnalysisLog, useDeleteAnalysisLog } from '../../hooks/useAnalysisLog';
 import { useReanalyze } from '../../hooks/useReanalyze';
 import { ScoreBadge } from '../ui/ScoreBadge';
 import type { AgentKey, AnalysisLog, PromptKey, Vacancy } from '../../lib/types';
@@ -63,8 +63,10 @@ function AgentHistoryRow({
   onSelectVersion: (key: PromptKey, version: number) => void;
 }) {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const { data: versions = [], isLoading: versionsLoading } = usePromptVersions(config.promptKey);
   const { data: logs = [], isLoading: logsLoading } = useVacancyAnalysisLog(vacancy.id, config.agent, 10);
+  const deleteLog = useDeleteAnalysisLog(vacancy.id);
 
   const activeVersion = versions.find(version => version.is_active);
   const defaultVersion = config.currentVersion ?? activeVersion?.version ?? versions[0]?.version;
@@ -150,6 +152,38 @@ function AgentHistoryRow({
                 </div>
                 <div className="mt-1 text-xs text-gray-500 truncate">{getOutputPreview(log)}</div>
               </button>
+
+              <div className="mt-2 flex items-center justify-end gap-2">
+                {pendingDeleteId === log.id ? (
+                  <>
+                    <span className="text-xs text-red-600">Удалить запись?</span>
+                    <button
+                      type="button"
+                      onClick={() => { deleteLog.mutate(log.id); setPendingDeleteId(null); }}
+                      disabled={deleteLog.isPending}
+                      className="text-xs px-2 py-0.5 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-60"
+                    >
+                      Да
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDeleteId(null)}
+                      className="text-xs px-2 py-0.5 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      Нет
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setPendingDeleteId(log.id)}
+                    className="p-1 text-gray-400 hover:text-red-500 rounded"
+                    title="Удалить запись"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
 
               {isExpanded && (
                 <pre className="mt-2 max-h-48 overflow-auto rounded bg-gray-50 dark:bg-gray-900 p-2 text-xs whitespace-pre-wrap">

@@ -1,0 +1,2155 @@
+{
+  "name": "work crm",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        1232
+      ],
+      "id": "30a58143-bd91-48f6-a272-26ac17c7d6c1",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "ZL3vZYTOq5Ty62Kl",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "companies",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.company.name }}"
+            },
+            {
+              "fieldId": "site",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.company.site }}"
+            },
+            {
+              "fieldId": "branch",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.company.branch }}"
+            },
+            {
+              "fieldId": "size",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.company.size }}"
+            },
+            {
+              "fieldId": "size_comment",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.company.size }}"
+            },
+            {
+              "fieldId": "stage",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.company.size }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        128,
+        864
+      ],
+      "id": "42ec3782-ad11-4c9c-8784-552d0fa449e1",
+      "name": "Create companies",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "vacancies",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "role",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.role }}"
+            },
+            {
+              "fieldId": "about",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.about }}"
+            },
+            {
+              "fieldId": "salary",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.salary }}"
+            },
+            {
+              "fieldId": "link",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.link }}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.source }}"
+            },
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Create companies').first().json.id }}"
+            },
+            {
+              "fieldId": "salary_raw",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.salary_raw }}"
+            },
+            {
+              "fieldId": "salary_comment",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.salary_comment }}"
+            },
+            {
+              "fieldId": "format",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.format}}"
+            },
+            {
+              "fieldId": "city",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.city }}"
+            },
+            {
+              "fieldId": "experience",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.experience }}"
+            },
+            {
+              "fieldId": "employment",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.employment }}"
+            },
+            {
+              "fieldId": "hard_skills",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.hard_skills}}"
+            },
+            {
+              "fieldId": "soft_skills",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.soft_skills }}"
+            },
+            {
+              "fieldId": "relocation",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.relocation }}"
+            },
+            {
+              "fieldId": "visa_support",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.visa_support}}"
+            },
+            {
+              "fieldId": "parser_prompt_version",
+              "fieldValue": "={{$('Get parser prompt').item.json.version}}"
+            },
+            {
+              "fieldId": "parsed_at",
+              "fieldValue": "={{$now}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        144,
+        1120
+      ],
+      "id": "1177c5cb-243a-4ada-b308-d053df0ff59b",
+      "name": "Create vacancies",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\nconst { vacancy_url, vacancy_text, company_site, company_text } = body;\n\nconst url = vacancy_url || 'https://test.local/vacancy/0';\n\nconst source = url.includes('hh.ru') ? 'hh'\n  : url.includes('linkedin.com') ? 'linkedin'\n  : url.includes('superjob.ru') ? 'superjob'\n  : url.includes('t.me') ? 'telegram'\n  : url.includes('zarplata.ru') ? 'zarplata'\n  : url.includes('habr.com') ? 'habr'\n  : 'other';\n\nreturn [{ json: {\n  vacancyText: [vacancy_text, company_text]\n    .filter(Boolean)\n    .join('\\n\\n--- Компания ---\\n'),\n  link: url.split('?')[0],\n  site: company_site || null,\n  source,\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        992
+      ],
+      "id": "afaeda69-74b4-43cf-9442-29f67586358b",
+      "name": "Parse Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.text;\n\n// Чистим think-блоки Llama и markdown\nconst cleaned = raw\n  .replace(/<think>[\\s\\S]*?<\\/think>/g, '')\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (error) {\n  throw new Error(`Parser LLM returned invalid JSON: ${error.message}\\n\\n${cleaned.slice(0, 1000)}`);\n}\n\nparsed.vacancy = parsed.vacancy || {};\nparsed.company = parsed.company || {};\n\nconst codeNode = $('Parse Input').first().json;\n\n// ── Vacancy ──────────────────────────────────────────\n// link и source всегда из Parse Input — они точнее чем от LLM\nparsed.vacancy.link = codeNode.link || null;\nparsed.vacancy.source = codeNode.source || 'telegram';\nparsed.vacancy.status = 'new';\n\n// Чистим поля которые LLM иногда пишет текстом вместо null\nconst nullIfEmpty = (val) =>\n  (!val || ['не указано', 'не указана', 'не определено', 'null'].includes(String(val).toLowerCase().trim()))\n    ? null\n    : val;\n\nparsed.vacancy.salary        = nullIfEmpty(parsed.vacancy.salary);\nparsed.vacancy.salary_raw    = nullIfEmpty(parsed.vacancy.salary_raw);\nparsed.vacancy.salary_comment = nullIfEmpty(parsed.vacancy.salary_comment);\nparsed.vacancy.format        = nullIfEmpty(parsed.vacancy.format);\nparsed.vacancy.city          = nullIfEmpty(parsed.vacancy.city);\nparsed.vacancy.experience    = nullIfEmpty(parsed.vacancy.experience);\nparsed.vacancy.employment    = nullIfEmpty(parsed.vacancy.employment);\nparsed.vacancy.relocation    = nullIfEmpty(parsed.vacancy.relocation);\nparsed.vacancy.visa_support  = nullIfEmpty(parsed.vacancy.visa_support);\nparsed.vacancy.reason        = nullIfEmpty(parsed.vacancy.reason);\n\n// Массивы — гарантируем что это всегда массив\nparsed.vacancy.hard_skills = Array.isArray(parsed.vacancy.hard_skills) ? parsed.vacancy.hard_skills : [];\nparsed.vacancy.soft_skills = Array.isArray(parsed.vacancy.soft_skills) ? parsed.vacancy.soft_skills : [];\n\n// ── Company ──────────────────────────────────────────\n// Сайт: сначала из Parse Input, потом от LLM\nparsed.company.site = codeNode.site || parsed.company.site || null;\n\nparsed.company.size         = nullIfEmpty(parsed.company.size);\nparsed.company.size_comment = nullIfEmpty(parsed.company.size_comment);\nparsed.company.stage        = nullIfEmpty(parsed.company.stage);\nparsed.company.branch       = nullIfEmpty(parsed.company.branch);\nparsed.company.name         = nullIfEmpty(parsed.company.name);\n\n// ── Финальный объект ─────────────────────────────────\nreturn [{ json: {\n  ...parsed,\n  // Шорткаты для удобства в следующих нодах\n  companyName:   parsed.company.name,\n  companyBranch: parsed.company.branch,\n  companySite:   parsed.company.site,\n  companyStage:  parsed.company.stage,\n  companySize:   parsed.company.size,\n  vacancyCity:   parsed.vacancy.city,\n  vacancyFormat: parsed.vacancy.format,\n  hardSkills:    parsed.vacancy.hard_skills,\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        992
+      ],
+      "id": "29c467f0-582d-4635-847e-0a593195aa78",
+      "name": "Parse LLM Response"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Prepare vacancy context').first().json.companySite || '' }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2368,
+        560
+      ],
+      "id": "10ffea5a-2e9c-48a4-b3da-760c9a2514ef",
+      "name": "Fetch Company Site"
+    },
+    {
+      "parameters": {
+        "jsCode": "const html = $input.first().json.data;\n\nconst text = html\n  .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n  .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .slice(0, 3000);\n\nreturn [{ json: { siteContent: text }}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2528,
+        560
+      ],
+      "id": "fbf8b36d-1716-46f1-8502-9e575ba5e6a8",
+      "name": "Clean HTML"
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3-32b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        3136,
+        1008
+      ],
+      "id": "a7fc243b-d907-4ad6-8241-e0905cb1460b",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "ZL3vZYTOq5Ty62Kl",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3-32b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        1232
+      ],
+      "id": "65e166df-9bef-4d8a-9f3b-5c6d8fa34d9e",
+      "name": "Groq Chat Model2",
+      "credentials": {
+        "groqApi": {
+          "id": "ZL3vZYTOq5Ty62Kl",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "prompts",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "profile"
+            },
+            {
+              "keyName": "is_active",
+              "condition": "eq",
+              "keyValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        976
+      ],
+      "id": "ed5d4bfd-5fe7-4d72-a209-4f6862733a54",
+      "name": "Get profile",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.text ?? '';\n\nconst cleaned = raw\n  .replace(/<think>[\\s\\S]*?<\\/think>/g, '')\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\nconst start = cleaned.indexOf('{');\nconst end = cleaned.lastIndexOf('}');\n\nif (start === -1 || end === -1 || end <= start) {\n  throw new Error(`Score LLM returned no JSON object:\\n\\n${cleaned.slice(0, 1000)}`);\n}\n\nconst jsonText = cleaned.slice(start, end + 1);\n\nlet parsed;\ntry {\n  parsed = JSON.parse(jsonText);\n} catch (error) {\n  throw new Error(`Score LLM returned invalid JSON: ${error.message}\\n\\n${jsonText.slice(0, 1000)}`);\n}\n\nreturn [{ json: parsed }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        976
+      ],
+      "id": "df86e472-7510-40e4-9764-4af89c3ea310",
+      "name": "Parse Score"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Parse Input').first().json.vacancyText }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "={{ $('Get parser prompt').first().json.content }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -384,
+        992
+      ],
+      "id": "e4a3c158-e9de-4f73-8c46-f38de3e37c7c",
+      "name": "JSON Parse"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=ПРОФИЛЬ КАНДИДАТА:\n{{ $('Get profile').first().json.content }}\n\nВАКАНСИЯ:\nКомпания: {{ $('Prepare vacancy context').first().json.companyName || 'Не указано' }}\nСфера: {{ $('Prepare vacancy context').first().json.companyBranch || 'Не указано' }}\nСайт: {{ $('Prepare vacancy context').first().json.companySite || 'Не указан' }}\n\nРоль: {{ $('Prepare vacancy context').first().json.role || 'Не указано' }}\n\nО вакансии:\n{{ $('Prepare vacancy context').first().json.about || 'Описание вакансии отсутствует' }}\n\nЗарплата: {{ $('Prepare vacancy context').first().json.salary || 'Не указана' }}\nФормат работы: {{ $('Prepare vacancy context').first().json.format || 'Не указан' }}\nГород: {{ $('Prepare vacancy context').first().json.city || 'Не указан' }}\nОпыт: {{ $('Prepare vacancy context').first().json.experience || 'Не указан' }}\nЗанятость: {{ $('Prepare vacancy context').first().json.employment || 'Не указана' }}\n\nHard skills:\n{{ Array.isArray($('Prepare vacancy context').first().json.hardSkills) ? $('Prepare vacancy context').first().json.hardSkills.join(', ') : 'Не указаны' }}\n\nSoft skills:\n{{ Array.isArray($('Prepare vacancy context').first().json.softSkills) ? $('Prepare vacancy context').first().json.softSkills.join(', ') : 'Не указаны' }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "={{ $('Get scoring prompt').first().json.content }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1264,
+        976
+      ],
+      "id": "0cf6900d-81de-41a3-9d79-df561f5d9132",
+      "name": "AI Scoring"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=ПРОФИЛЬ КАНДИДАТА:\n{{ $('Get profile').first().json.content }}\n\nКомпания: {{ $json.companyName || 'Не указано' }}\nСфера: {{ $json.companyBranch || 'Не указано' }}\nСайт: {{ $json.companySite || 'Не указан' }}\nРазмер компании: {{ $json.companySize || 'Не указано' }}\nСтадия компании: {{ $json.companyStage || 'Не указано' }}\n\nО компании / контекст из источников:\n\nДанные с сайта компании:\n{{ $json.siteContent || 'Сайт не предоставлен или не был обработан' }}\n\nДополнительная информация из веб-поиска:\n{{ $json.webResearch || 'Поиск по компании не дал полезной информации' }}\n\nИсточники веб-поиска:\n{{ Array.isArray($json.webSources) && $json.webSources.length\n  ? $json.webSources.map(s => `- ${s.title || 'Без названия'}: ${s.url}`).join('\\n')\n  : 'Нет источников' }}\n\nРоль: {{ $json.role || 'Не указано' }}\n\nО вакансии:\n{{ $json.about || 'Описание вакансии отсутствует' }}\n\nЗарплата: {{ $json.salary || 'Не указана' }}\nФормат работы: {{ $json.format || 'Не указан' }}\nГород: {{ $json.city || 'Не указан' }}\nОпыт: {{ $json.experience || 'Не указан' }}\nЗанятость: {{ $json.employment || 'Не указана' }}\n\nHard skills: {{ Array.isArray($json.hardSkills) ? $json.hardSkills.join(', ') : 'Не указаны' }}\nSoft skills: {{ Array.isArray($json.softSkills) ? $json.softSkills.join(', ') : 'Не указаны' }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "={{ $('Get analyzer prompt').first().json.content }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        3248,
+        736
+      ],
+      "id": "841732a5-6701-4d46-9689-a61af4f07351",
+      "name": "AI Analysis"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c17df3da-cac9-486e-ac37-7f6d83349988",
+              "leftValue": "={{ $json.parsed_output.score }}",
+              "rightValue": 69,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2064,
+        976
+      ],
+      "id": "4881e0a5-1291-403d-a280-d4a100d19dc6",
+      "name": "what is a score?(70) "
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "368b82c7-dbae-4c4c-9daf-8c9463529fa4",
+              "leftValue": "={{ $('Prepare vacancy context').first().json.companySite || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2208,
+        720
+      ],
+      "id": "4355bcb7-4b0e-471c-a329-109174d25f74",
+      "name": "Do you have a site?"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "prompts",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "analyzer"
+            },
+            {
+              "keyName": "is_active",
+              "condition": "eq",
+              "keyValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        736
+      ],
+      "id": "55363b58-d146-47bc-a548-fd61a24f6672",
+      "name": "Get analyzer prompt",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "prompts",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "parser"
+            },
+            {
+              "keyName": "is_active",
+              "condition": "eq",
+              "keyValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        992
+      ],
+      "id": "3324cb9b-b58d-4e33-afe1-deca68071db4",
+      "name": "Get parser prompt",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "prompts",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "scoring"
+            },
+            {
+              "keyName": "is_active",
+              "condition": "eq",
+              "keyValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        912,
+        1120
+      ],
+      "id": "f9dd3bf8-cd0c-4cd5-9ac6-ae52b06e4555",
+      "name": "Get scoring prompt",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "vacancies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Prepare vacancy context').first().json.vacancyId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "scoring_prompt_version",
+              "fieldValue": "={{$('Get scoring prompt').first().json.version}}"
+            },
+            {
+              "fieldId": "scored_at",
+              "fieldValue": "={{$now}}"
+            },
+            {
+              "fieldId": "score",
+              "fieldValue": "={{ $('Parse Score').first().json.score }}"
+            },
+            {
+              "fieldId": "category",
+              "fieldValue": "={{ $('Parse Score').first().json.category }}"
+            },
+            {
+              "fieldId": "reason",
+              "fieldValue": "={{ $('Parse Score').first().json.reason }}"
+            },
+            {
+              "fieldId": "scoring_prompt_version",
+              "fieldValue": "={{ $('Get scoring prompt').first().json.version }}"
+            },
+            {
+              "fieldId": "scored_at",
+              "fieldValue": "{{ $now }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1696,
+        976
+      ],
+      "id": "5b7a2939-fb3c-4fc3-9fe0-eadc68974435",
+      "name": "Update vacancy scoring",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "vacancy_id",
+              "fieldValue": "={{ $('Prepare vacancy context').first().json.vacancyId }}"
+            },
+            {
+              "fieldId": "agent",
+              "fieldValue": "=scoring"
+            },
+            {
+              "fieldId": "prompt_key",
+              "fieldValue": "={{$('Parse Score').item.json.category}}"
+            },
+            {
+              "fieldId": "prompt_version",
+              "fieldValue": "={{ $('Get scoring prompt').first().json.version }}"
+            },
+            {
+              "fieldId": "raw_output",
+              "fieldValue": "={{ $('AI Scoring').first().json.text }}"
+            },
+            {
+              "fieldId": "parsed_output",
+              "fieldValue": "={{ $('Parse Score').first().json }}"
+            },
+            {
+              "fieldId": "model",
+              "fieldValue": "groq"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1872,
+        976
+      ],
+      "id": "6bb84712-a477-4a70-8a22-5eeaecf9ad49",
+      "name": "Insert scoring log",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "vacancies",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Prepare vacancy context').first().json.vacancyId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "analyzer_prompt_version",
+              "fieldValue": "={{ $('Get scoring prompt').first().json.version }}"
+            },
+            {
+              "fieldId": "analyzed_at",
+              "fieldValue": "={{$now}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3552,
+        736
+      ],
+      "id": "1f367cea-c25f-46c9-b817-081d31d5a7b7",
+      "name": "Update vacancy analysis version",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "vacancy_id",
+              "fieldValue": "={{ $('Prepare vacancy context').first().json.vacancyId }}"
+            },
+            {
+              "fieldId": "agent",
+              "fieldValue": "=analyzer"
+            },
+            {
+              "fieldId": "prompt_key",
+              "fieldValue": "=analyzer"
+            },
+            {
+              "fieldId": "prompt_version",
+              "fieldValue": "={{ $('Get analyzer prompt').first().json.version }}"
+            },
+            {
+              "fieldId": "raw_output",
+              "fieldValue": "={{ $('AI Analysis').first().json.text }}"
+            },
+            {
+              "fieldId": "model",
+              "fieldValue": "groq"
+            },
+            {
+              "fieldId": "parsed_output",
+              "fieldValue": "={{ $('AI Analysis').first().json }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3728,
+        736
+      ],
+      "id": "56a8301b-c459-4fa1-83d2-0ca02e71b9c2",
+      "name": "Insert analyzer log",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "vacancy_id",
+              "fieldValue": "={{ $('Prepare vacancy result').first().json.id }}"
+            },
+            {
+              "fieldId": "agent",
+              "fieldValue": "=parser"
+            },
+            {
+              "fieldId": "prompt_version",
+              "fieldValue": "={{$('Get parser prompt').first().json.version}}"
+            },
+            {
+              "fieldId": "raw_output",
+              "fieldValue": "={{ $('JSON Parse').first().json.text }}"
+            },
+            {
+              "fieldId": "prompt_key",
+              "fieldValue": " parser"
+            },
+            {
+              "fieldId": "input",
+              "fieldValue": "={{$('Parse Input').item.json}}"
+            },
+            {
+              "fieldId": "parsed_output",
+              "fieldValue": "={{$('Parse LLM Response').item.json}}"
+            },
+            {
+              "fieldId": "model",
+              "fieldValue": "groq"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        544,
+        1120
+      ],
+      "id": "a2810207-fd27-4e5c-aafe-967bf3e9801e",
+      "name": "Insert parser log",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let siteContent = null;\n\ntry {\n  siteContent = $('Clean HTML').first().json.siteContent;\n} catch (e) {\n  siteContent = null;\n}\n\ntry {\n  siteContent = siteContent ?? $('Empty site content').first().json.siteContent;\n} catch (e) {}\n\nlet tavilyResearch = null;\nlet tavilySources = [];\n\ntry {\n  const tavily = $('Search').first().json;\n\n  const answer = tavily.answer ? `Краткий ответ поиска:\\n${tavily.answer}` : '';\n\n  const results = (tavily.results ?? [])\n    .map((result, index) => {\n      const title = result.title ?? 'Без заголовка';\n      const url = result.url ?? '';\n      const content = result.content ?? '';\n      return `${index + 1}. ${title}\\nURL: ${url}\\n${content}`;\n    })\n    .join('\\n\\n');\n\n  tavilyResearch = [answer, results].filter(Boolean).join('\\n\\n---\\n\\n');\n\n  tavilySources = (tavily.results ?? []).map(result => ({\n    title: result.title,\n    url: result.url,\n    score: result.score,\n  }));\n} catch (e) {\n  tavilyResearch = null;\n  tavilySources = [];\n}\n\nconst ctx = $('Prepare vacancy context').first().json;\n\nreturn [{\n  json: {\n    vacancyId: ctx.vacancyId,\n\n    companyName: ctx.companyName ?? null,\n    companyBranch: ctx.companyBranch ?? null,\n    companySite: ctx.companySite ?? null,\n    companyStage: ctx.companyStage ?? null,\n    companySize: ctx.companySize ?? null,\n\n    siteContent: siteContent || 'Сайт не предоставлен или не был обработан',\n    webResearch: tavilyResearch || 'Поиск по компании не дал полезной информации',\n    webSources: tavilySources,\n\n    role: ctx.role ?? null,\n    about: ctx.about ?? null,\n    salary: ctx.salary ?? null,\n    format: ctx.format ?? null,\n    city: ctx.city ?? null,\n    experience: ctx.experience ?? null,\n    employment: ctx.employment ?? null,\n    hardSkills: ctx.hardSkills ?? [],\n    softSkills: ctx.softSkills ?? [],\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3072,
+        736
+      ],
+      "id": "ed715bd4-2ae6-4d94-b0d4-579d05ffe4c7",
+      "name": "Prepare analysis input"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "vacancies",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "link",
+              "condition": "eq",
+              "keyValue": "={{ $('Parse Input').first().json.link }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        320,
+        864
+      ],
+      "id": "4ab486cd-548f-4d12-89cb-2c70501b7602",
+      "name": "Get existing vacancy",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "26b16053-02e6-49af-ba41-03457c122eb4",
+              "leftValue": "={{ $('Get existing vacancy').all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        512,
+        864
+      ],
+      "id": "77a1e460-e009-46c2-a228-ea5a81121e90",
+      "name": "Vacancy exists"
+    },
+    {
+      "parameters": {
+        "jsCode": "let vacancy = null;\n\ntry {\n  vacancy = $('Update vacancies').first().json;\n} catch (e) {\n  vacancy = null;\n}\n\nif (!vacancy?.id) {\n  vacancy = $('Create vacancies').first().json;\n}\n\nif (!vacancy?.id) {\n  throw new Error('No vacancy id after create/update');\n}\n\nreturn [{ json: vacancy }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        1120
+      ],
+      "id": "583a2140-de58-4434-a20d-e5b49e1d683d",
+      "name": "Prepare vacancy result"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=ПРОФИЛЬ КАНДИДАТА:\n{{ $('Get profile').first().json.content }}\n\nКомпания: {{ $json.companyName || 'Не указано' }}\nСфера: {{ $json.companyBranch || 'Не указано' }}\nСайт: {{ $json.companySite || 'Не указан' }}\nСтадия: {{ $json.companyStage || 'Не указано' }}\n\nРоль: {{ $json.role || 'Не указано' }}\nО вакансии: {{ $json.about || 'Не указано' }}\n\nАнализ компании:\nПродукт: {{ $json.companyProduct || 'Не указано' }}\nКультура: {{ $json.companyCulture || 'Не указано' }}\nБоли: {{ $json.companyPains || 'Не указано' }}\n\nЗелёные флаги: {{ Array.isArray($json.greenFlags) ? $json.greenFlags.join('\\n- ') : 'Не указаны' }}\nКрасные флаги: {{ Array.isArray($json.redFlags) ? $json.redFlags.join('\\n- ') : 'Не указаны' }}\n\nBrief:\nТон: {{ $json.briefTone || 'Не указан' }}\nКрючки: {{ Array.isArray($json.briefHooks) ? $json.briefHooks.join('\\n- ') : 'Не указаны' }}\nИзбегать: {{ Array.isArray($json.briefAvoid) ? $json.briefAvoid.join('\\n- ') : 'Не указаны' }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "={{ $('Get copywriter prompt').first().json.content }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        4304,
+        736
+      ],
+      "id": "5e05a3a2-f3bd-436d-a9cb-d5b163ddecbe",
+      "name": "AI Copyrite"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Данные из Prepare analysis input — там уже всё собрано\nconst analysisInput = $('Prepare analysis input').first().json;\n\n// Парсим результат глубокого аналитика\nconst rawAnalysis = $('AI Analysis').first().json.text ?? '';\n\n\n\nconst analysisText = rawAnalysis\n  .replace(/<think>[\\s\\S]*?<\\/think>/g, '')\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\nreturn [{\n  json: {\n    vacancyId: analysisInput.vacancyId,\n    companyName: analysisInput.companyName,\n    companyBranch: analysisInput.companyBranch,\n    companySite: analysisInput.companySite,\n\n    role: analysisInput.role,\n    about: analysisInput.about,\n    salary: analysisInput.salary,\n\n    analysisText,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3920,
+        736
+      ],
+      "id": "cc3319d6-7091-421a-b01a-7fc5297c662c",
+      "name": "Prepare copywriter input"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "prompts",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "copywriter"
+            },
+            {
+              "keyName": "is_active",
+              "condition": "eq",
+              "keyValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4128,
+        736
+      ],
+      "id": "7faeed08-f8db-42c3-a443-b59b86809ee6",
+      "name": "Get copywriter prompt",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        4240,
+        960
+      ],
+      "id": "9b0d5e62-faf1-40de-81f0-81c332deeb3e",
+      "name": "Groq Chat Model3",
+      "credentials": {
+        "groqApi": {
+          "id": "ZL3vZYTOq5Ty62Kl",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Parse LLM Response').first().json.company.site }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3984,
+        1744
+      ],
+      "id": "6cfc61e8-91d4-45e2-b935-d4e248336628",
+      "name": "Fetch Company Site1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const html = $input.first().json.data;\n\nconst text = html\n  .replace(/<script[^>]*>[\\s\\S]*?<\\/script>/gi, '')\n  .replace(/<style[^>]*>[\\s\\S]*?<\\/style>/gi, '')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/\\s+/g, ' ')\n  .trim()\n  .slice(0, 3000);\n\nreturn [{ json: { siteContent: text }}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4176,
+        1744
+      ],
+      "id": "17210881-ab86-4ee5-aff7-aac87b100ac8",
+      "name": "Clean HTML1"
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3-32b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        4736,
+        2128
+      ],
+      "id": "07329bfc-44c5-4c17-bd75-dcf90bac6af0",
+      "name": "Groq Chat Model4",
+      "credentials": {
+        "groqApi": {
+          "id": "ZL3vZYTOq5Ty62Kl",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=ПРОФИЛЬ КАНДИДАТА:\n{{ $('Get profile').first().json.content }}\n\nКомпания: {{ $json.companyName || 'Не указано' }}\nСфера: {{ $json.companyBranch || 'Не указано' }}\nСайт: {{ $json.companySite || 'Не указан' }}\nРазмер компании: {{ $json.companySize || 'Не указано' }}\nСтадия компании: {{ $json.companyStage || 'Не указано' }}\n\nО компании:\n{{ $json.siteContent || 'Сайт не предоставлен или не был обработан' }}\n\nРоль: {{ $json.role || 'Не указано' }}\n\nО вакансии:\n{{ $json.about || 'Описание вакансии отсутствует' }}\n\nЗарплата: {{ $json.salary || 'Не указана' }}\nФормат работы: {{ $json.format || 'Не указан' }}\nГород: {{ $json.city || 'Не указан' }}\nОпыт: {{ $json.experience || 'Не указан' }}\nЗанятость: {{ $json.employment || 'Не указана' }}\n\nHard skills: {{ Array.isArray($json.hardSkills) ? $json.hardSkills.join(', ') : 'Не указаны' }}\nSoft skills: {{ Array.isArray($json.softSkills) ? $json.softSkills.join(', ') : 'Не указаны' }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "={{ $('Get analyzer prompt1').first().json.content }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        4832,
+        1904
+      ],
+      "id": "a3ad66b1-924e-459d-bb48-1e0fc7647328",
+      "name": "AI Analysis1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "368b82c7-dbae-4c4c-9daf-8c9463529fa4",
+              "leftValue": "={{ $('Parse LLM Response').first().json.companySite }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3728,
+        1888
+      ],
+      "id": "4a0149e1-8ce8-4f4a-9f07-0e9afe674309",
+      "name": "Do you have a site?1"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "prompts",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "analyzer"
+            },
+            {
+              "keyName": "is_active",
+              "condition": "eq",
+              "keyValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4432,
+        1904
+      ],
+      "id": "02cb40be-8a1a-4e6e-adfe-b8171cfd721e",
+      "name": "Get analyzer prompt1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "vacancies",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Prepare vacancy result').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "analyzer_prompt_version",
+              "fieldValue": "={{ $('Get scoring prompt').first().json.version }}"
+            },
+            {
+              "fieldId": "analyzed_at",
+              "fieldValue": "={{$now}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5136,
+        1904
+      ],
+      "id": "60a5d851-d1ee-4c03-958e-c51402087244",
+      "name": "Update vacancy analysis version1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "analysis_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "vacancy_id",
+              "fieldValue": "={{$('Prepare vacancy result').first().json.id}}"
+            },
+            {
+              "fieldId": "agent",
+              "fieldValue": "=analyzer"
+            },
+            {
+              "fieldId": "prompt_key",
+              "fieldValue": "=analyzer"
+            },
+            {
+              "fieldId": "prompt_version",
+              "fieldValue": "={{ $('Get analyzer prompt1').first().json.version }}"
+            },
+            {
+              "fieldId": "raw_output",
+              "fieldValue": "={{ $('AI Analysis1').first().json.text }}"
+            },
+            {
+              "fieldId": "model",
+              "fieldValue": "groq"
+            },
+            {
+              "fieldId": "parsed_output",
+              "fieldValue": "={{ $('AI Analysis1').first().json }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5312,
+        1904
+      ],
+      "id": "1480054d-7418-4539-af35-03dc12f9a82b",
+      "name": "Insert analyzer log1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let siteContent = null;\n\ntry {\n  siteContent = $('Clean HTML1').first().json.siteContent;\n} catch (e) {\n  siteContent = null;\n}\n\nconst parsed = $('Parse LLM Response').first().json;\nconst vacancy = parsed.vacancy ?? {};\nconst company = parsed.company ?? {};\nconst vacancyResult = $('Prepare vacancy result').first().json;\n\nreturn [{\n  json: {\n    vacancyId: vacancyResult.id,\n\n    companyName: company.name ?? null,\n    companyBranch: company.branch ?? null,\n    companySite: company.site ?? null,\n    companyStage: company.stage ?? null,\n    companySize: company.size ?? null,\n\n    siteContent: siteContent || 'Сайт не предоставлен или не был обработан',\n\n    role: vacancy.role ?? null,\n    about: vacancy.about ?? null,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4624,
+        1904
+      ],
+      "id": "2fd6a7e6-1956-4313-bd46-34d856d321ca",
+      "name": "Prepare analysis input1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=ПРОФИЛЬ КАНДИДАТА:\n{{ $('Get profile').first().json.content }}\n\nКомпания: {{ $json.companyName || 'Не указано' }}\nСфера: {{ $json.companyBranch || 'Не указано' }}\nСайт: {{ $json.companySite || 'Не указан' }}\nСтадия: {{ $json.companyStage || 'Не указано' }}\n\nРоль: {{ $json.role || 'Не указано' }}\nО вакансии: {{ $json.about || 'Не указано' }}\n\nАнализ компании:\nПродукт: {{ $json.companyProduct || 'Не указано' }}\nКультура: {{ $json.companyCulture || 'Не указано' }}\nБоли: {{ $json.companyPains || 'Не указано' }}\n\nЗелёные флаги: {{ Array.isArray($json.greenFlags) ? $json.greenFlags.join('\\n- ') : 'Не указаны' }}\nКрасные флаги: {{ Array.isArray($json.redFlags) ? $json.redFlags.join('\\n- ') : 'Не указаны' }}\n\nBrief:\nТон: {{ $json.briefTone || 'Не указан' }}\nКрючки: {{ Array.isArray($json.briefHooks) ? $json.briefHooks.join('\\n- ') : 'Не указаны' }}\nИзбегать: {{ Array.isArray($json.briefAvoid) ? $json.briefAvoid.join('\\n- ') : 'Не указаны' }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "={{ $('Get copywriter prompt1').first().json.content }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        5888,
+        1904
+      ],
+      "id": "2d00a7a9-4077-4782-9dec-34e6969507da",
+      "name": "AI Copyrite1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Данные из Prepare analysis input — там уже всё собрано\nconst analysisInput = $('Prepare analysis input1').first().json;\n\n// Парсим результат глубокого аналитика\nconst rawAnalysis = $('AI Analysis1').first().json.text ?? '';\n\n\n\nconst analysisText = rawAnalysis\n  .replace(/<think>[\\s\\S]*?<\\/think>/g, '')\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\nreturn [{\n  json: {\n    vacancyId: analysisInput.vacancyId,\n    companyName: analysisInput.companyName,\n    companyBranch: analysisInput.companyBranch,\n    companySite: analysisInput.companySite,\n\n    role: analysisInput.role,\n    about: analysisInput.about,\n    salary: analysisInput.salary,\n\n    analysisText,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5504,
+        1904
+      ],
+      "id": "f165b9c6-f3a8-4658-b755-10ecc912ddfe",
+      "name": "Prepare copywriter input1"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "prompts",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "key",
+              "condition": "eq",
+              "keyValue": "copywriter"
+            },
+            {
+              "keyName": "is_active",
+              "condition": "eq",
+              "keyValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5712,
+        1904
+      ],
+      "id": "4be95510-0509-4afc-983e-517ee41bce77",
+      "name": "Get copywriter prompt1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        5824,
+        2128
+      ],
+      "id": "2f33d079-0856-49ba-9f75-ea45233c49bc",
+      "name": "Groq Chat Model5",
+      "credentials": {
+        "groqApi": {
+          "id": "ZL3vZYTOq5Ty62Kl",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "vacancies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get existing vacancy').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "role",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.role }}"
+            },
+            {
+              "fieldId": "about",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.about }}"
+            },
+            {
+              "fieldId": "salary",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.salary }}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "={{ $('Parse LLM Response').first().json.vacancy.source }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "new"
+            },
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Create companies').first().json.id }}"
+            },
+            {
+              "fieldId": "parser_prompt_version",
+              "fieldValue": "={{ $('Get parser prompt').first().json.version }}"
+            },
+            {
+              "fieldId": "parsed_at",
+              "fieldValue": "={{ $now }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        720,
+        848
+      ],
+      "id": "15a80b54-d85b-4eb3-81f4-ab934a9dc378",
+      "name": "Update vacancies",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reanalyze-vacancy",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -48,
+        1376
+      ],
+      "id": "8932ffc7-445f-469a-9bee-ca33900d8286",
+      "name": "Reanalize",
+      "webhookId": "23708ecf-2a81-4a60-8593-d1ef37c7ce12"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "7ff2b9e0-9291-4db5-87c6-4e1d6f257ee7",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1040,
+        992
+      ],
+      "id": "56a7529c-6be4-4cf7-87ab-5952f6ee5519",
+      "name": "Handmade from platforms",
+      "webhookId": "7ff2b9e0-9291-4db5-87c6-4e1d6f257ee7"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "vacancies",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.vacancyId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        352,
+        1376
+      ],
+      "id": "0ca7a9fc-9153-4a4d-88a7-559d135a2f0c",
+      "name": "Get vacancy by id",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "companies",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get vacancy by id').first().json.company_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        560,
+        1376
+      ],
+      "id": "fa32a4b9-6a46-42f2-9827-19f8d6241f95",
+      "name": "Get company by vacancy.company_id",
+      "credentials": {
+        "supabaseApi": {
+          "id": "vpzZS0H0irmoxZI4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? $input.first().json;\n\nconst vacancyIds = body.vacancy_ids ?? [];\nconst promptVersions = body.prompt_versions ?? {};\n\nif (!Array.isArray(vacancyIds) || vacancyIds.length === 0) {\n  throw new Error('reanalyze webhook requires vacancy_ids array');\n}\n\nreturn vacancyIds.map(vacancyId => ({\n  json: {\n    vacancyId,\n    promptVersions,\n  },\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        1376
+      ],
+      "id": "636043e8-09d3-4bc0-9277-76a9fbee1ba5",
+      "name": "Split vacancy ids"
+    },
+    {
+      "parameters": {
+        "jsCode": "let source = 'parser';\n\nlet vacancyResult = null;\nlet parsed = null;\nlet vacancy = {};\nlet company = {};\n\ntry {\n  vacancyResult = $('Prepare vacancy result').first().json;\n  parsed = $('Parse LLM Response').first().json;\n  vacancy = parsed.vacancy ?? {};\n  company = parsed.company ?? {};\n} catch (e) {\n  source = 'reanalyze';\n}\n\nif (source === 'reanalyze') {\n  vacancyResult = $('Get vacancy by id').first().json;\n  company = $('Get company by vacancy.company_id').first().json;\n  vacancy = vacancyResult;\n}\n\nif (!vacancyResult?.id) {\n  throw new Error('Prepare vacancy context: no vacancy id');\n}\n\nreturn [{\n  json: {\n    source,\n    vacancyId: vacancyResult.id,\n    promptVersions: (() => {\n      try {\n        return $('Split vacancy ids').first().json.promptVersions ?? {};\n      } catch (e) {\n        return {};\n      }\n    })(),\n\n    companyId: company.id ?? vacancyResult.company_id ?? null,\n    companyName: company.name ?? vacancyResult.company_name ?? null,\n    companyBranch: company.branch ?? vacancyResult.company_branch ?? null,\n    companySite: company.site ?? vacancyResult.company_site ?? null,\n    companyStage: company.stage ?? null,\n    companySize: company.size ?? null,\n\n    role: vacancy.role ?? vacancyResult.role ?? null,\n    about: vacancy.about ?? vacancyResult.about ?? null,\n    salary: vacancy.salary ?? vacancyResult.salary ?? null,\n    format: vacancy.format ?? vacancyResult.format ?? null,\n    city: vacancy.city ?? vacancyResult.city ?? null,\n    experience: vacancy.experience ?? vacancyResult.experience ?? null,\n    employment: vacancy.employment ?? vacancyResult.employment ?? null,\n    hardSkills: vacancy.hard_skills ?? vacancy.hardSkills ?? vacancyResult.hard_skills ?? [],\n    softSkills: vacancy.soft_skills ?? vacancy.softSkills ?? vacancyResult.soft_skills ?? [],\n    link: vacancy.link ?? vacancyResult.link ?? null,\n    sourceName: vacancyResult.source ?? null,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        1120
+      ],
+      "id": "3ca829be-a832-4d9f-923c-a922c455d541",
+      "name": "Prepare vacancy context"
+    },
+    {
+      "parameters": {
+        "query": "={{\n  [\n    $('Prepare vacancy context').first().json.companyName,\n    $('Prepare vacancy context').first().json.companyBranch,\n    $('Prepare vacancy context').first().json.companySite,\n    'компания чем занимается продукт команда вакансии отзывы новости'\n  ].filter(Boolean).join(' ')\n}}\n",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        736
+      ],
+      "id": "21af5e08-f808-44fd-bae8-44d126e140f5",
+      "name": "Search",
+      "credentials": {
+        "tavilyApi": {
+          "id": "m7GS1d3ZvVYzIWL4",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    siteContent: 'Сайт не предоставлен или не был обработан',\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        736
+      ],
+      "id": "6520f1dd-3466-4a31-85e7-02e9373dc176",
+      "name": "Empty site content"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "JSON Parse",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create companies": {
+      "main": [
+        [
+          {
+            "node": "Get existing vacancy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create vacancies": {
+      "main": [
+        [
+          {
+            "node": "Prepare vacancy result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Get parser prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LLM Response": {
+      "main": [
+        [
+          {
+            "node": "Create companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Company Site": {
+      "main": [
+        [
+          {
+            "node": "Clean HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Analysis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean HTML": {
+      "main": [
+        [
+          {
+            "node": "Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Scoring",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Score": {
+      "main": [
+        [
+          {
+            "node": "Update vacancy scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get profile": {
+      "main": [
+        [
+          {
+            "node": "AI Scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Parse": {
+      "main": [
+        [
+          {
+            "node": "Parse LLM Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Scoring": {
+      "main": [
+        [
+          {
+            "node": "Parse Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "what is a score?(70) ": {
+      "main": [
+        [
+          {
+            "node": "Do you have a site?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Do you have a site?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Company Site",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Empty site content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get analyzer prompt": {
+      "main": [
+        [
+          {
+            "node": "Prepare analysis input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get parser prompt": {
+      "main": [
+        [
+          {
+            "node": "JSON Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get scoring prompt": {
+      "main": [
+        [
+          {
+            "node": "Get profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update vacancy scoring": {
+      "main": [
+        [
+          {
+            "node": "Insert scoring log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert scoring log": {
+      "main": [
+        [
+          {
+            "node": "what is a score?(70) ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Analysis": {
+      "main": [
+        [
+          {
+            "node": "Update vacancy analysis version",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update vacancy analysis version": {
+      "main": [
+        [
+          {
+            "node": "Insert analyzer log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert parser log": {
+      "main": [
+        [
+          {
+            "node": "Prepare vacancy context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare analysis input": {
+      "main": [
+        [
+          {
+            "node": "AI Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get existing vacancy": {
+      "main": [
+        [
+          {
+            "node": "Vacancy exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vacancy exists": {
+      "main": [
+        [
+          {
+            "node": "Update vacancies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create vacancies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare vacancy result": {
+      "main": [
+        [
+          {
+            "node": "Insert parser log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert analyzer log": {
+      "main": [
+        [
+          {
+            "node": "Prepare copywriter input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare copywriter input": {
+      "main": [
+        [
+          {
+            "node": "Get copywriter prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get copywriter prompt": {
+      "main": [
+        [
+          {
+            "node": "AI Copyrite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Copyrite",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Company Site1": {
+      "main": [
+        [
+          {
+            "node": "Clean HTML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean HTML1": {
+      "main": [
+        [
+          {
+            "node": "Get analyzer prompt1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Analysis1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Analysis1": {
+      "main": [
+        [
+          {
+            "node": "Update vacancy analysis version1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Do you have a site?1": {
+      "main": [
+        [
+          {
+            "node": "Fetch Company Site1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get analyzer prompt1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get analyzer prompt1": {
+      "main": [
+        [
+          {
+            "node": "Prepare analysis input1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update vacancy analysis version1": {
+      "main": [
+        [
+          {
+            "node": "Insert analyzer log1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert analyzer log1": {
+      "main": [
+        [
+          {
+            "node": "Prepare copywriter input1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare analysis input1": {
+      "main": [
+        [
+          {
+            "node": "AI Analysis1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare copywriter input1": {
+      "main": [
+        [
+          {
+            "node": "Get copywriter prompt1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get copywriter prompt1": {
+      "main": [
+        [
+          {
+            "node": "AI Copyrite1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Copyrite1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update vacancies": {
+      "main": [
+        [
+          {
+            "node": "Prepare vacancy result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reanalize": {
+      "main": [
+        [
+          {
+            "node": "Split vacancy ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handmade from platforms": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split vacancy ids": {
+      "main": [
+        [
+          {
+            "node": "Get vacancy by id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get vacancy by id": {
+      "main": [
+        [
+          {
+            "node": "Get company by vacancy.company_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get company by vacancy.company_id": {
+      "main": [
+        [
+          {
+            "node": "Prepare vacancy context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare vacancy context": {
+      "main": [
+        [
+          {
+            "node": "Get scoring prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search": {
+      "main": [
+        [
+          {
+            "node": "Get analyzer prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empty site content": {
+      "main": [
+        [
+          {
+            "node": "Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bf222d6b-0632-4f00-a864-6b75b1ce981e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3c5b9cb150c1923306f2cd8ed5154ca9d82fa7ec727b4596a763a3b87fb7a96b"
+  },
+  "id": "wd8lecRMbMTPMOCP",
+  "tags": []
+}

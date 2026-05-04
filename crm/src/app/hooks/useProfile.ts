@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { db } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { Profile } from '../lib/types';
@@ -20,5 +21,6 @@ export function useUpdateProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
+    onError: (e: Error) => toast.error(`Ошибка сохранения профиля: ${e.message}`),
   });
 }

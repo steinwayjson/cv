@@ -97,10 +97,12 @@ export function VacancyTable({
                 />
               </td>
               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                {formatDistanceToNow(new Date(vacancy.published_at), {
-                  addSuffix: true,
-                  locale: ru,
-                })}
+                {vacancy.published_at
+                  ? formatDistanceToNow(new Date(vacancy.published_at), {
+                      addSuffix: true,
+                      locale: ru,
+                    })
+                  : '—'}
               </td>
               <td className="px-4 py-3">
                 <ArrowRight size={16} className="text-gray-400" />
