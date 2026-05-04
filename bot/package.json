@@ -1,0 +1,20 @@
+{
+  "name": "work-telegram-bot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node22 --outfile=dist/index.js",
+    "start": "node dist/index.js",
+    "setup-webhook": "ts-node src/setup-webhook.ts",
+    "deploy": "powershell -File deploy.ps1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",    "dotenv": "^16.4.1",    "esbuild": "^0.28.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

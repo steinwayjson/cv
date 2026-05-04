@@ -1,0 +1,19 @@
+{
+  "name": "work-parser",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js",
+    "deploy": "powershell -File deploy.ps1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "node-html-parser": "^6.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "dotenv": "^16.4.1",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.3.3"
+  }
+}

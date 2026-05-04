@@ -6,10 +6,10 @@ import posthog from 'posthog-js';
  */
 export function initAnalytics(): void {
   const key = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
-  if (!key || key.startsWith('phc_ЗАМЕНИ')) return; // нет ключа — молча пропускаем
+  if (!key) return;
 
   posthog.init(key, {
-    api_host: (import.meta.env.VITE_POSTHOG_HOST as string | undefined) ?? 'https://eu.i.posthog.com',
+    api_host: (import.meta.env.VITE_POSTHOG_HOST as string | undefined) ?? 'https://us.i.posthog.com',
 
     // SPA: pageview-события отправляем вручную из ScrollToTop,
     // иначе PostHog засчитает только первую загрузку и пропустит переходы.
