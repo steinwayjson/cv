@@ -117,6 +117,8 @@ export interface TgChannel {
   last_post_id: number | null;
   is_active: boolean;
   created_at: string;
+  depth_days: number;      // глубина сбора при первом запуске, дефолт 40
+  last_run_at: string | null; // когда последний раз запускался
 }
 
 export interface ParserRun {
@@ -127,4 +129,17 @@ export interface ParserRun {
   elapsed_ms: number;
   posts_found: number;
   error_message: string | null;
+  channel_id: string | null; // uuid канала (нулл = запуск всех каналов)
+}
+
+export interface RawVacancy {
+  id: string;
+  source: 'tg' | 'agg' | 'manual';
+  tg_message_id: string | null;
+  channel_username: string | null;
+  raw_text: string;
+  post_url: string | null;
+  posted_at: string | null;
+  created_at: string;
+  status: 'new' | 'processing' | 'done' | 'skipped';
 }

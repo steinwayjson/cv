@@ -271,30 +271,72 @@ Runtime-настройки агентов, которые не являются 
 
 ### `tg_channels`
 
-Список Telegram-каналов для парсера. Сейчас не используется CRM после отката парсера.
+Список Telegram-каналов для парсера.
 
 Поля:
 
 | Поле | Тип | Назначение |
 | --- | --- | --- |
 | `id` | `uuid` | Первичный ключ |
-| `username` | `text` | Username канала |
+| `username` | `text` | Username канала (без @) |
 | `title` | `text` | Отображаемое название |
-| `is_active` | `boolean` | Флаг активности парсера |
-| `last_post_id` | numeric/int | Последний обработанный пост |
+| `is_active` | `boolean` | Включён/выключен парсер для канала |
+| `last_post_id` | `int` | Последний обработанный message_id |
+| `depth_days` | `integer` | Глубина сбора при первом запуске (дефолт 40, диапазон 1–90) |
+| `last_run_at` | `timestamptz` | Когда последний раз парсер обрабатывал канал |
 | `created_at` | `timestamptz` | Время создания |
 
-Статус: оставить только если Telegram-парсер возвращается. Иначе позже можно архивировать.
+Правила:
+- `last_post_id = null` = первый запуск, парсер соберёт посты за `depth_days` дней.
+- Сброс канала: удалить и добавить заново — `last_post_id` сбрасывается автоматически.
+- `depth_days` настраивается из CRM.
+
+### `parser_runs`
+
+Лог каждого запуска парсера по каналу.
+
+Поля:
+
+| Поле | Тип | Назначение |
+| --- | --- | --- |
+| `id` | `uuid` | Первичный ключ |
+| `created_at` | `timestamptz` | Время запуска |
+| `channel_id` | `uuid` | FK на `tg_channels` (null = запуск всех каналов) |
+| `trigger` | `text` | `scheduled` или `manual` |
+| `status` | `text` | `ok` или `error` |
+| `elapsed_ms` | `integer` | Время выполнения в мс |
+| `posts_found` | `integer` | Количество новых постов записанных в raw_vacancies |
+| `error_message` | `text` | Текст ошибки, null если ok |
+
+### `raw_vacancies`
+
+Буфер между парсером и n8n. Парсер пишет сюда, n8n забирает по расписанию порциями.
+
+Поля:
+
+| Поле | Тип | Назначение |
+| --- | --- | --- |
+| `id` | `uuid` | Первичный ключ |
+| `source` | `text` | `tg`, `agg`, `manual` |
+| `tg_message_id` | `text` | `{username}/{message_id}` — UNIQUE, для дедупликации |
+| `channel_username` | `text` | Username канала |
+| `raw_text` | `text` | Исходный текст поста |
+| `post_url` | `text` | Прямая ссылка на пост |
+| `posted_at` | `timestamptz` | Время публикации поста |
+| `created_at` | `timestamptz` | Время записи в буфер |
+| `status` | `text` | `new` → `processing` → `done` / `error` / `skipped` |
+| `error_message` | `text` | Текст ошибки из n8n, заполняется если `status = error` |
+| `processed_at` | `timestamptz` | Время завершения обработки (`done`, `error` или `skipped`) |
+
+Правила:
+- Парсер делает `upsert` с `ON CONFLICT (tg_message_id) DO NOTHING` — повторная вставка молча игнорируется.
+- n8n берёт LIMIT 20 за итерацию, сразу ставит `processing`, после обработки — `done` или `error` (с текстом в `error_message`) или `skipped`. В любом случае записывает `processed_at = now()`.
 
 ## Deprecated / Removed
 
 ### `profile`
 
 Удалена. Профиль кандидата теперь живёт в строке `prompts.key = 'profile'`.
-
-### `parser_runs`
-
-CRM-код раньше ссылался на `parser_runs`, но таблица не входит в текущую схему. Не возвращать её, пока парсер не будет пересобран заново.
 
 ## Важные Индексы И Constraints
 

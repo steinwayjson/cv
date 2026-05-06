@@ -1,6 +1,5 @@
-import { parse } from 'node-html-parser';
+﻿import { parse } from 'node-html-parser';
 import { createClient } from '@supabase/supabase-js';
-import { sendToN8n } from './webhook';
 
 export interface TgChannel {
   id: string;
@@ -8,6 +7,7 @@ export interface TgChannel {
   title: string;
   last_post_id: number | null;
   is_active: boolean;
+  depth_days: number;
 }
 
 export interface ParsedPost {
@@ -20,10 +20,10 @@ export interface ParsedPost {
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_KEY!
+  process.env.SUPABASE_SERVICE_KEY!
 );
 
-const THIRTY_DAYS_S = 40 * 24 * 60 * 60;
+const DEFAULT_DEPTH_DAYS = 40;
 const PAGE_DELAY_MS = 800;
 
 async function fetchPage(username: string, before?: number): Promise<ParsedPost[]> {
@@ -60,8 +60,9 @@ async function fetchPage(username: string, before?: number): Promise<ParsedPost[
 }
 
 async function getNewPosts(channel: TgChannel): Promise<ParsedPost[]> {
+  const depthDays = channel.depth_days ?? DEFAULT_DEPTH_DAYS;
   const isFirstRun = channel.last_post_id === null;
-  const cutoff = isFirstRun ? Math.floor(Date.now() / 1000) - THIRTY_DAYS_S : null;
+  const cutoff = isFirstRun ? Math.floor(Date.now() / 1000) - depthDays * 24 * 60 * 60 : null;
   const minId = channel.last_post_id ?? 0;
 
   const allPosts: ParsedPost[] = [];
@@ -84,11 +85,34 @@ async function getNewPosts(channel: TgChannel): Promise<ParsedPost[]> {
   return allPosts;
 }
 
+async function savePostsToRawVacancies(channel: TgChannel, posts: ParsedPost[]): Promise<number> {
+  if (!posts.length) return 0;
+
+  const rows = posts.map(post => ({
+    source: 'tg',
+    tg_message_id: `${channel.username}/${post.message_id}`,
+    channel_username: channel.username,
+    raw_text: post.text,
+    post_url: `https://t.me/${channel.username}/${post.message_id}`,
+    posted_at: new Date(post.date * 1000).toISOString(),
+    status: 'new',
+  }));
+
+  // ON CONFLICT DO NOTHING — дедупликация по tg_message_id
+  const { error, data } = await supabase
+    .from('raw_vacancies')
+    .upsert(rows, { onConflict: 'tg_message_id', ignoreDuplicates: true })
+    .select('id');
+
+  if (error) throw new Error(`raw_vacancies insert error: ${error.message}`);
+  return data?.length ?? rows.length;
+}
+
 export async function parseAllChannels(): Promise<number> {
   let totalPosts = 0;
   const { data: channels, error } = await supabase
     .from('tg_channels')
-    .select('*')
+    .select('id, username, title, last_post_id, is_active, depth_days')
     .eq('is_active', true);
 
   if (error) throw new Error(`Supabase: ${error.message}`);
@@ -97,24 +121,42 @@ export async function parseAllChannels(): Promise<number> {
   console.log(`[parser] ${channels.length} channels`);
 
   for (const channel of channels as TgChannel[]) {
+    const startedAt = Date.now();
     try {
       const posts = await getNewPosts(channel);
       if (!posts.length) { console.log(`[parser] @${channel.username}: no new posts`); continue; }
 
-      totalPosts += posts.length;
-      console.log(`[parser] @${channel.username}: ${posts.length} posts (total: ${totalPosts})`);
       posts.sort((a, b) => a.message_id - b.message_id);
-
-      for (const post of posts) await sendToN8n(post);
+      const saved = await savePostsToRawVacancies(channel, posts);
+      totalPosts += saved;
+      console.log(`[parser] @${channel.username}: ${saved} posts saved (total: ${totalPosts})`);
 
       const maxId = Math.max(...posts.map((p) => p.message_id));
       const { error: e } = await supabase
         .from('tg_channels')
-        .update({ last_post_id: maxId })
+        .update({ last_post_id: maxId, last_run_at: new Date().toISOString() })
         .eq('id', channel.id);
       if (e) console.error(`[parser] update @${channel.username}:`, e.message);
+
+      // Логируем прогон по каналу
+      await supabase.from('parser_runs').insert({
+        channel_id: channel.id,
+        trigger: 'scheduled',
+        status: 'ok',
+        elapsed_ms: Date.now() - startedAt,
+        posts_found: saved,
+        error_message: null,
+      });
     } catch (err) {
       console.error(`[parser] @${channel.username}:`, err);
+      await supabase.from('parser_runs').insert({
+        channel_id: channel.id,
+        trigger: 'scheduled',
+        status: 'error',
+        elapsed_ms: Date.now() - startedAt,
+        posts_found: 0,
+        error_message: String(err),
+      });
     }
   }
   return totalPosts;

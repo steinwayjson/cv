@@ -32,7 +32,7 @@ function checkSecret(headers: Record<string, string>): boolean {
 // Supabase-клиент для логирования запусков
 function makeParserRunsClient() {
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) return null;
   return createClient(url, key, { auth: { persistSession: false } });
 }

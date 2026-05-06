@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { mockVacancies, mockPipelineStages, mockProfile, mockAgentConfig } from './mockData';
-import type { Vacancy, PipelineStage, Profile, AgentConfig, Prompt, PromptKey, AgentKey, AnalysisLog, TgChannel, ParserRun } from './types';
+import type { Vacancy, PipelineStage, Profile, AgentConfig, Prompt, PromptKey, AgentKey, AnalysisLog, TgChannel, ParserRun, RawVacancy } from './types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -839,20 +839,20 @@ export const db = {
       return [];
     },
 
-    async add(username: string, title: string): Promise<TgChannel> {
+    async add(username: string, title: string, depthDays = 40): Promise<TgChannel> {
       if (supabase) {
         // Нормализуем username: убираем @ в начале если есть
         const normalized = username.replace(/^@/, '').trim();
         const { data, error } = await supabase
           .from('tg_channels')
-          .insert({ username: normalized, title, is_active: true })
+          .insert({ username: normalized, title, is_active: true, depth_days: depthDays })
           .select()
           .single();
         if (error) throw error;
         return data;
       }
       await delay(200);
-      return { id: Date.now().toString(), username, title, last_post_id: null, is_active: true, created_at: new Date().toISOString() };
+      return { id: Date.now().toString(), username, title, last_post_id: null, is_active: true, created_at: new Date().toISOString(), depth_days: depthDays, last_run_at: null };
     },
 
     async toggle(id: string, isActive: boolean): Promise<void> {
@@ -871,10 +871,61 @@ export const db = {
       }
       await delay(100);
     },
+
+    async updateDepth(id: string, depthDays: number): Promise<void> {
+      if (supabase) {
+        const { error } = await supabase.from('tg_channels').update({ depth_days: depthDays }).eq('id', id);
+        if (error) throw error;
+        return;
+      }
+    },
+  },
+
+  rawVacancies: {
+    async getRecent(limit = 50): Promise<RawVacancy[]> {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('raw_vacancies')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(limit);
+        if (error) throw error;
+        return data || [];
+      }
+      return [];
+    },
+
+    async getStats(): Promise<Record<string, number>> {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('raw_vacancies')
+          .select('status')
+          .order('created_at', { ascending: false })
+          .limit(500);
+        if (error) throw error;
+        const counts: Record<string, number> = { new: 0, processing: 0, done: 0, skipped: 0 };
+        for (const row of data || []) counts[row.status] = (counts[row.status] ?? 0) + 1;
+        return counts;
+      }
+      return {};
+    },
+
+    async resetSkipped(): Promise<number> {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('raw_vacancies')
+          .update({ status: 'new' })
+          .eq('status', 'skipped')
+          .select('id');
+        if (error) throw error;
+        return data?.length ?? 0;
+      }
+      return 0;
+    },
   },
 
   parserRuns: {
-    async getRecent(limit = 10): Promise<ParserRun[]> {
+    async getRecent(limit = 20): Promise<ParserRun[]> {
       if (supabase) {
         const { data } = await supabase
           .from('parser_runs')
@@ -884,6 +935,19 @@ export const db = {
         return data || [];
       }
       await delay(200);
+      return [];
+    },
+
+    async getForChannel(channelId: string, limit = 10): Promise<ParserRun[]> {
+      if (supabase) {
+        const { data } = await supabase
+          .from('parser_runs')
+          .select('*')
+          .eq('channel_id', channelId)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+        return data || [];
+      }
       return [];
     },
   },

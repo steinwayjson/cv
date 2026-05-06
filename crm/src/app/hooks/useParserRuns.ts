@@ -7,8 +7,8 @@ export function useParserRuns() {
 
   const query = useQuery({
     queryKey: ['parser-runs'],
-    queryFn: () => db.parserRuns.getRecent(10),
-    refetchInterval: 30_000, // обновляем каждые 30 секунд
+    queryFn: () => db.parserRuns.getRecent(20),
+    refetchInterval: 30_000,
     refetchIntervalInBackground: false,
   });
 
@@ -25,6 +25,14 @@ export function useParserRuns() {
     error: query.error,
     refresh,
   };
+}
+
+export function useChannelRuns(channelId: string | null) {
+  return useQuery({
+    queryKey: ['parser-runs', 'channel', channelId],
+    queryFn: () => db.parserRuns.getForChannel(channelId!, 5),
+    enabled: !!channelId,
+  });
 }
 
 export function useParserTrigger() {

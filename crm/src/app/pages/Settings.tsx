@@ -12,6 +12,7 @@ import {
 import { useManualSources } from '../hooks/useManualSources';
 import { useDistinctSources } from '../hooks/useDistinctSources';
 import { PipelineEditor } from '../components/settings/PipelineEditor';
+import { TgParserSection } from '../components/settings/TgParserSection';
 import { toast } from 'sonner';
 import type { Prompt, PromptKey } from '../lib/types';
 
@@ -344,6 +345,9 @@ export function Settings() {
             </button>
           </div>
         </div>
+
+        {/* TG-парсер */}
+        <TgParserSection />
 
         {/* Воронка */}
         <div className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
