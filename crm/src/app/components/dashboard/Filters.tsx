@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useDistinctSources } from '../../hooks/useDistinctSources';
-import { SourceIcon } from '../ui/SourceIcon';
+import { usePipeline } from '../../hooks/usePipeline';
+import { getStatusOptions } from '../../lib/statuses';
 
 export interface FilterValues {
   category: string;
@@ -19,6 +20,8 @@ interface FiltersProps {
 export function Filters({ onFilterChange }: FiltersProps) {
   const [filters, setFilters] = useState<FilterValues>(INITIAL);
   const sources = useDistinctSources();
+  const { data: stages = [] } = usePipeline(filters.source || undefined);
+  const statusOptions = getStatusOptions(stages);
 
   const update = (key: keyof FilterValues, value: string) => {
     const next = { ...filters, [key]: value };
@@ -52,12 +55,9 @@ export function Filters({ onFilterChange }: FiltersProps) {
         className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-sm"
       >
         <option value="">Статус</option>
-        <option value="new">Новая</option>
-        <option value="sent">Отправлено</option>
-        <option value="replied">Ответ получен</option>
-        <option value="interview">Интервью</option>
-        <option value="offer">Оффер</option>
-        <option value="rejected">Отказ</option>
+        {statusOptions.map(option => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
       </select>
 
       <select

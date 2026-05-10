@@ -1,29 +1,30 @@
+import { useMemo } from 'react';
+import { usePipeline } from '../../hooks/usePipeline';
+import { DEFAULT_STATUS_CONFIG, getStatusOptions } from '../../lib/statuses';
 import { type VacancyStatus } from '../../lib/types';
 
 interface StatusDropdownProps {
   value: VacancyStatus;
   onChange: (status: VacancyStatus) => void;
   fullWidth?: boolean;
+  source?: string | null;
+  disabled?: boolean;
 }
 
-const statusConfig: Record<VacancyStatus, { label: string; color: string }> = {
-  new: { label: 'Новая', color: '#6B7280' },
-  sent: { label: 'Отправлено', color: '#3B82F6' },
-  replied: { label: 'Ответ получен', color: '#EAB308' },
-  interview: { label: 'Интервью', color: '#22C55E' },
-  rejected: { label: 'Отказ', color: '#EF4444' },
-  offer: { label: 'Оффер', color: '#F59E0B' },
-};
+export function StatusDropdown({ value, onChange, fullWidth, source, disabled }: StatusDropdownProps) {
+  const { data: stages = [] } = usePipeline(source ?? undefined);
+  const options = useMemo(() => getStatusOptions(stages), [stages]);
+  const current = options.find(option => option.value === value) ?? DEFAULT_STATUS_CONFIG[value];
 
-export function StatusDropdown({ value, onChange, fullWidth }: StatusDropdownProps) {
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as VacancyStatus)}
-      className={`px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm ${fullWidth ? 'w-full' : ''}`}
-      style={{ color: statusConfig[value].color }}
+      disabled={disabled}
+      className={`px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm disabled:opacity-60 ${fullWidth ? 'w-full' : ''}`}
+      style={{ color: current?.color ?? DEFAULT_STATUS_CONFIG.new.color }}
     >
-      {Object.entries(statusConfig).map(([key, { label, color }]) => (
+      {options.map(({ value: key, label, color }) => (
         <option key={key} value={key} style={{ color }}>
           {label}
         </option>

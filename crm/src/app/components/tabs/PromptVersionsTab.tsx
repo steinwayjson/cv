@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { usePromptVersions } from '../../hooks/usePrompts';
 import { useVacancyAnalysisLog, useDeleteAnalysisLog } from '../../hooks/useAnalysisLog';
-import { useReanalyze } from '../../hooks/useReanalyze';
+import { useIsVacancyReanalyzing, useReanalyze } from '../../hooks/useReanalyze';
 import { ScoreBadge } from '../ui/ScoreBadge';
 import type { AgentKey, AnalysisLog, PromptKey, Vacancy } from '../../lib/types';
 
@@ -200,6 +200,7 @@ function AgentHistoryRow({
 
 export function PromptVersionsTab({ vacancy }: PromptVersionsTabProps) {
   const reanalyze = useReanalyze();
+  const isReanalyzing = useIsVacancyReanalyzing(vacancy.id);
   const [selectedVersions, setSelectedVersions] = useState<Partial<Record<PromptKey, number>>>({});
 
   const agents: AgentConfig[] = [
@@ -258,11 +259,11 @@ export function PromptVersionsTab({ vacancy }: PromptVersionsTabProps) {
       <div className="sticky bottom-0 pt-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={handleReanalyze}
-          disabled={reanalyze.isPending || selectedCount === 0}
+          disabled={reanalyze.isPending || isReanalyzing || selectedCount === 0}
           className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-60"
         >
-          <RefreshCw size={14} className={reanalyze.isPending ? 'animate-spin' : ''} />
-          {reanalyze.isPending ? 'Sending...' : 'Reanalyze with selected versions'}
+          <RefreshCw size={14} className={reanalyze.isPending || isReanalyzing ? 'animate-spin' : ''} />
+          {isReanalyzing ? 'Reanalyzing...' : reanalyze.isPending ? 'Sending...' : 'Reanalyze with selected versions'}
         </button>
       </div>
     </div>

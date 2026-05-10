@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { StatusDropdown } from '../ui/StatusDropdown';
 import { Modal } from '../ui/Modal';
 import { useUpdateVacancyStatus, useUpdateVacancyNotes, useDeleteVacancy } from '../../hooks/useVacancies';
+import { useIsVacancyReanalyzing } from '../../hooks/useReanalyze';
 import { toast } from 'sonner';
 import type { Vacancy, VacancyStatus } from '../../lib/types';
 
@@ -21,6 +22,7 @@ export function ActionsTab({ vacancy, onDelete }: ActionsTabProps) {
   const updateStatus = useUpdateVacancyStatus();
   const updateNotes = useUpdateVacancyNotes();
   const deleteVacancy = useDeleteVacancy();
+  const isReanalyzing = useIsVacancyReanalyzing(vacancy.id);
 
   // Синхронизируем при смене вакансии
   useEffect(() => {
@@ -60,6 +62,8 @@ export function ActionsTab({ vacancy, onDelete }: ActionsTabProps) {
         <label className="block text-sm font-medium mb-2">Статус</label>
         <StatusDropdown
           value={vacancy.status}
+          source={vacancy.source}
+          disabled={isReanalyzing}
           onChange={(status) => updateStatus.mutate({
             id: vacancy.id,
             status,

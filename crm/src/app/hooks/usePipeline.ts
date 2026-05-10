@@ -27,6 +27,7 @@ export function usePipelineStrict(source: string | null) {
 function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ['pipeline'] });
   queryClient.invalidateQueries({ queryKey: ['pipeline-strict'] });
+  queryClient.invalidateQueries({ queryKey: ['pipeline-sources'] });
 }
 
 export function useUpdatePipeline() {
@@ -51,6 +52,22 @@ export function useDeletePipelineStage() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => db.pipeline.deleteStage(id),
+    onSuccess: () => invalidateAll(queryClient),
+  });
+}
+
+export function useCreatePipelineSource() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (source: string) => db.pipeline.createSource(source),
+    onSuccess: () => invalidateAll(queryClient),
+  });
+}
+
+export function useDeletePipelineSource() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (source: string) => db.pipeline.deleteSource(source),
     onSuccess: () => invalidateAll(queryClient),
   });
 }

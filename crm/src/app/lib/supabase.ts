@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { mockVacancies, mockPipelineStages, mockProfile, mockAgentConfig } from './mockData';
+import { DEFAULT_SOURCES, canonicalSource, sourceMatches, uniqueCanonicalSources } from './sources';
 import type { Vacancy, PipelineStage, Profile, AgentConfig, Prompt, PromptKey, AgentKey, AnalysisLog, TgChannel, ParserRun, RawVacancy } from './types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
@@ -15,9 +16,28 @@ if (!USE_MOCK && !window.__supabase) {
 }
 export const supabase = USE_MOCK ? null : (window.__supabase as SupabaseClient);
 
+const QUERY_PAGE_SIZE = 1000;
+
+async function fetchPagedRows<T>(buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>): Promise<T[]> {
+  const rows: T[] = [];
+
+  for (let from = 0; ; from += QUERY_PAGE_SIZE) {
+    const to = from + QUERY_PAGE_SIZE - 1;
+    const { data, error } = await buildQuery(from, to);
+    if (error) throw error;
+
+    const page = data ?? [];
+    rows.push(...page);
+
+    if (page.length < QUERY_PAGE_SIZE) break;
+  }
+
+  return rows;
+}
+
 // ─── Пресеты воронок по источникам ─────────────────────────────────────────
 type PresetStage = { name: string; color: string };
-export const PRESET_SOURCES = ['HH', 'TG', 'LinkedIn', 'Сайт'];
+export const PRESET_SOURCES = [...DEFAULT_SOURCES];
 
 export const PIPELINE_PRESETS: Record<string, PresetStage[]> = {
   default: [
@@ -27,14 +47,14 @@ export const PIPELINE_PRESETS: Record<string, PresetStage[]> = {
     { name: 'Интервью',           color: '#8B5CF6' },
     { name: 'Оффер',              color: '#10B981' },
   ],
-  HH: [
+  HeadHunter: [
     { name: 'Найдено на HH',      color: '#D6001C' }, // HH red
     { name: 'Откликнулся',        color: '#E05B5B' },
     { name: 'Ответ HR',           color: '#F59E0B' },
     { name: 'Техническое',        color: '#8B5CF6' },
     { name: 'Оффер',              color: '#10B981' },
   ],
-  TG: [
+  Telegram: [
     { name: 'Нашёл в канале',     color: '#6B7280' },
     { name: 'Написал в ЛС',       color: '#2AABEE' }, // Telegram blue
     { name: 'Ответили',           color: '#F59E0B' },
@@ -59,8 +79,9 @@ export const PIPELINE_PRESETS: Record<string, PresetStage[]> = {
 
 function getPipelinePreset(source: string | null): PresetStage[] {
   if (!source) return PIPELINE_PRESETS.default;
+  const canonical = canonicalSource(source);
   const presetKey = Object.keys(PIPELINE_PRESETS).find(
-    key => key.toLowerCase() === source.toLowerCase()
+    key => key.toLowerCase() === canonical.toLowerCase()
   );
   return PIPELINE_PRESETS[presetKey ?? 'default'];
 }
@@ -182,14 +203,13 @@ export const db = {
   vacancies: {
     async getAll(): Promise<Vacancy[]> {
       if (supabase) {
-        const { data: vacData, error: vacError } = await supabase
+        const vacData = await fetchPagedRows<any>((from, to) => supabase
           .from('vacancies')
           .select('id, company_id, link, role, salary, status, last_stage, source, notes, next_action, next_action_at, published_at, priority, source_type, score, category, reason, parser_prompt_version, parsed_at, analyzer_prompt_version, analyzed_at, scoring_prompt_version, scored_at, copywriter_prompt_version, copywritten_at, companies (name, site, branch)')
           .order('published_at', { ascending: false, nullsFirst: false })
-          .limit(200);
-        if (vacError) throw vacError;
+          .range(from, to));
 
-        return (vacData || []).map((v: any) => ({
+        return vacData.map((v: any) => ({
           ...v,
           company_name: v.companies?.name,
           company_site: v.companies?.site,
@@ -202,20 +222,15 @@ export const db = {
 
     async getSources(): Promise<string[]> {
       if (supabase) {
-        const { data, error } = await supabase
+        const data = await fetchPagedRows<{ source: string | null }>((from, to) => supabase
           .from('vacancies')
           .select('source')
           .not('source', 'is', null)
-          .limit(200);
-        if (error) throw error;
-        return Array.from(
-          new Map((data || []).map((row: any) => [String(row.source).toLowerCase(), String(row.source)])).values()
-        );
+          .range(from, to));
+        return uniqueCanonicalSources((data || []).map((row: any) => row.source));
       }
       await delay(100);
-      return Array.from(
-        new Map(mockVacanciesStore.map(v => [v.source.toLowerCase(), v.source] as const)).values()
-      );
+      return uniqueCanonicalSources(mockVacanciesStore.map(v => v.source));
     },
 
     async getById(id: string): Promise<Vacancy | null> {
@@ -339,20 +354,21 @@ export const db = {
     async getStages(source?: string, strict = false): Promise<PipelineStage[]> {
       if (supabase) {
         if (source) {
-          const { data: specific, error: specificErr } = await supabase
+          const { data: allSpecific, error: specificErr } = await supabase
             .from('pipeline_stages')
             .select('*')
-            .ilike('source', source)
+            .not('source', 'is', null)
             .order('order_index', { ascending: true });
+          const specific = (allSpecific || []).filter((stage: any) => sourceMatches(stage.source, source));
           if (strict) {
             // Если колонка source ещё не существует (migration не выполнена) — graceful fallback
             if (specificErr) {
               // column doesn't exist — падаем на все этапы (не-strict поведение)
             } else {
-              return specific || [];
+              return specific;
             }
           } else {
-            if (!specificErr && specific && specific.length > 0) return specific;
+            if (!specificErr && specific.length > 0) return specific;
           }
         }
         // Дефолтные (source IS NULL) — если колонка ещё не добавлена, fallback на все этапы
@@ -371,7 +387,7 @@ export const db = {
       }
       await delay(200);
       if (source) {
-        const specific = mockPipelineStore.filter(s => s.source?.toLowerCase() === source.toLowerCase());
+        const specific = mockPipelineStore.filter(s => sourceMatches(s.source, source));
         if (strict || specific.length > 0) return specific;
       }
       return mockPipelineStore.filter(s => !s.source);
@@ -379,25 +395,17 @@ export const db = {
 
     async getSources(): Promise<string[]> {
       if (supabase) {
-        const { data, error } = await supabase
+        const data = await fetchPagedRows<{ source: string | null }>((from, to) => supabase
           .from('pipeline_stages')
           .select('source')
           .not('source', 'is', null)
-          .limit(200);
-        if (error) throw error;
+          .range(from, to));
         return Array.from(
           new Map((data || []).map((row: any) => [String(row.source).toLowerCase(), String(row.source)])).values()
         );
       }
       await delay(100);
-      return Array.from(
-        new Map(
-          mockPipelineStore
-            .map(s => s.source)
-            .filter(Boolean)
-            .map(source => [source!.toLowerCase(), source!] as const)
-        ).values()
-      );
+      return uniqueCanonicalSources(mockPipelineStore.map(stage => stage.source));
     },
 
     async updateStages(stages: PipelineStage[]): Promise<void> {
@@ -432,6 +440,43 @@ export const db = {
       return newStage;
     },
 
+    async createSource(source: string): Promise<void> {
+      const normalized = canonicalSource(source);
+      if (!normalized) return;
+
+      const preset = getPipelinePreset(normalized);
+      const rows = preset.map((stage, idx) => ({
+        name: stage.name,
+        color: stage.color,
+        order_index: idx + 1,
+        source: normalized,
+      }));
+
+      if (supabase) {
+        const { data: existing, error: countError } = await supabase
+          .from('pipeline_stages')
+          .select('source')
+          .not('source', 'is', null);
+        if (countError) throw countError;
+        if ((existing || []).some((stage: any) => sourceMatches(stage.source, normalized))) return;
+
+        const { error } = await supabase.from('pipeline_stages').insert(rows);
+        if (error) throw error;
+        return;
+      }
+
+      await delay(100);
+      const exists = mockPipelineStore.some(stage => sourceMatches(stage.source, normalized));
+      if (exists) return;
+      mockPipelineStore = [
+        ...mockPipelineStore,
+        ...rows.map((stage, idx) => ({
+          id: `source-${normalized}-${idx}`,
+          ...stage,
+        })),
+      ];
+    },
+
     async deleteStage(id: string): Promise<void> {
       if (supabase) {
         const { error } = await supabase.from('pipeline_stages').delete().eq('id', id);
@@ -440,6 +485,31 @@ export const db = {
       }
       await delay(100);
       mockPipelineStore = mockPipelineStore.filter(s => s.id !== id);
+    },
+
+    async deleteSource(source: string): Promise<void> {
+      const normalized = canonicalSource(source);
+      if (!normalized) return;
+
+      if (supabase) {
+        const { data, error: selectError } = await supabase
+          .from('pipeline_stages')
+          .select('id, source')
+          .not('source', 'is', null);
+        if (selectError) throw selectError;
+
+        const ids = (data || [])
+          .filter((stage: any) => sourceMatches(stage.source, normalized))
+          .map((stage: any) => stage.id);
+        if (ids.length > 0) {
+          const { error } = await supabase.from('pipeline_stages').delete().in('id', ids);
+          if (error) throw error;
+        }
+        return;
+      }
+
+      await delay(100);
+      mockPipelineStore = mockPipelineStore.filter(stage => !sourceMatches(stage.source, normalized));
     },
 
     async renameStage(id: string, name: string): Promise<void> {
@@ -455,12 +525,12 @@ export const db = {
 
     // Заполнить пресеты для всех источников (только если этапов ещё нет)
     async seedPreset(sources: string[]): Promise<void> {
-      const slots: Array<string | null> = [null, ...sources];
+      const slots: Array<string | null> = [null, ...uniqueCanonicalSources(sources)];
 
       if (supabase) {
         for (const source of slots) {
           const q = supabase.from('pipeline_stages').select('id', { count: 'exact', head: true });
-          const query = source === null ? q.is('source', null) : q.ilike('source', source);
+          const query = source === null ? q.is('source', null) : q.ilike('source', canonicalSource(source));
           const { count } = await query;
           if (count && count > 0) continue; // уже есть — не перетираем
 
@@ -481,7 +551,7 @@ export const db = {
       await delay(300);
       for (const source of slots) {
         const hasStages = mockPipelineStore.some(s =>
-          source === null ? !s.source : s.source?.toLowerCase() === source.toLowerCase()
+          source === null ? !s.source : sourceMatches(s.source, source)
         );
         if (hasStages) continue;
         const presetKey = source ?? 'default';
@@ -500,10 +570,7 @@ export const db = {
     },
 
     async seedPresetFast(sources: string[]): Promise<void> {
-      const uniqueSources = Array.from(
-        new Map(sources.map(source => [source.toLowerCase(), source] as const)).values()
-      );
-      const slots: Array<string | null> = [null, ...uniqueSources];
+      const slots: Array<string | null> = [null, ...uniqueCanonicalSources(sources)];
 
       if (supabase) {
         const { data: existing, error } = await supabase
@@ -535,7 +602,7 @@ export const db = {
       await delay(100);
       for (const source of slots) {
         const hasStages = mockPipelineStore.some(s =>
-          source === null ? !s.source : s.source?.toLowerCase() === source.toLowerCase()
+          source === null ? !s.source : sourceMatches(s.source, source)
         );
         if (hasStages) continue;
         const presetKey = source ?? 'default';

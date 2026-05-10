@@ -2,48 +2,39 @@ import { memo, useMemo } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useVacancies } from '../../hooks/useVacancies';
 import { usePipeline } from '../../hooks/usePipeline';
-
-// Порядок этапов — жёстко привязан к VacancyStatus
-// order_index в pipeline_stages: 1=new, 2=sent, 3=replied, 4=interview, 5=offer
-const STAGE_STATUSES = ['new', 'sent', 'replied', 'interview', 'offer'] as const;
-const DEFAULT_LABELS: Record<string, string> = {
-  new: 'Новые', sent: 'Отправлено', replied: 'Ответили', interview: 'Собес', offer: 'Оффер',
-};
-const STAGE_COLORS: Record<string, string> = {
-  new: '#6B7280', sent: '#3B82F6', replied: '#F59E0B', interview: '#8B5CF6', offer: '#10B981',
-};
+import {
+  ACTIVE_STAGE_STATUSES,
+  DEFAULT_STATUS_CONFIG,
+  getStatusOptions,
+  normalizeSource,
+} from '../../lib/statuses';
 
 interface FunnelProps {
-  source?: string; // передаётся из Dashboard при выборе фильтра
+  source?: string;
 }
 
 export const Funnel = memo(function Funnel({ source }: FunnelProps) {
   const { data: vacancies = [] } = useVacancies();
-  // Берём названия этапов для источника (или дефолт если source не задан)
   const { data: stages = [] } = usePipeline(source);
+  const statusOptions = useMemo(() => getStatusOptions(stages, false), [stages]);
 
-  // Фильтруем по источнику (case-insensitive)
   const pool = useMemo(
-    () => source ? vacancies.filter(v => v.source?.toLowerCase() === source.toLowerCase()) : vacancies,
+    () => source ? vacancies.filter(v => normalizeSource(v.source) === normalizeSource(source)) : vacancies,
     [vacancies, source]
   );
 
-  // Кумулятивный подсчёт за один проход
-  // Вакансия с last_stage учитывается в этапах до last_stage включительно
   const counts = useMemo(() => {
     const c: Record<string, number> = { new: 0, sent: 0, replied: 0, interview: 0, offer: 0 };
-    const statusOrder = STAGE_STATUSES as unknown as string[];
+    const statusOrder = ACTIVE_STAGE_STATUSES as unknown as string[];
 
     for (const v of pool) {
       if (v.status === 'rejected') {
-        // Считаем до last_stage включительно (этапы, которые вакансия прошла)
         const cutoff = v.last_stage ?? 'new';
         for (const s of statusOrder) {
           c[s]++;
           if (s === cutoff) break;
         }
       } else {
-        // Считаем до текущего статуса включительно
         for (const s of statusOrder) {
           c[s]++;
           if (s === v.status) break;
@@ -54,7 +45,6 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
   }, [pool]);
 
   const rejected = useMemo(() => pool.filter(v => v.status === 'rejected').length, [pool]);
-
   const title = source ? `Воронка · ${source}` : 'Воронка';
 
   return (
@@ -64,14 +54,13 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
       </h2>
 
       <div className="flex items-start flex-wrap gap-x-1 gap-y-4">
-        {STAGE_STATUSES.map((status, idx) => {
+        {ACTIVE_STAGE_STATUSES.map((status, idx) => {
           const count = counts[status] ?? 0;
-          const prevCount = idx > 0 ? (counts[STAGE_STATUSES[idx - 1]] ?? 0) : null;
+          const prevCount = idx > 0 ? (counts[ACTIVE_STAGE_STATUSES[idx - 1]] ?? 0) : null;
           const conversion = prevCount && prevCount > 0
             ? Math.round((count / prevCount) * 100)
             : null;
-          // Кастомное название из pipeline_stages по order_index (1-based)
-          const label = stages.find(s => s.order_index === idx + 1)?.name ?? DEFAULT_LABELS[status];
+          const option = statusOptions.find(item => item.value === status) ?? DEFAULT_STATUS_CONFIG[status];
 
           return (
             <div key={status} className="flex items-start">
@@ -86,11 +75,11 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
                 </div>
               )}
               <div className="flex flex-col items-center min-w-[52px]">
-                <span className="text-2xl font-bold leading-none" style={{ color: STAGE_COLORS[status] }}>
+                <span className="text-2xl font-bold leading-none" style={{ color: option.color }}>
                   {count}
                 </span>
                 <span className="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-1 leading-tight">
-                  {label}
+                  {option.label}
                 </span>
               </div>
             </div>
@@ -114,4 +103,3 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
     </div>
   );
 });
-
