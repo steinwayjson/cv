@@ -16,6 +16,7 @@ export const DEFAULT_STATUS_CONFIG: Record<VacancyStatus, StatusOption> = {
   interview: { value: 'interview', label: 'Интервью', color: '#22C55E' },
   rejected: { value: 'rejected', label: 'Отказ', color: '#EF4444' },
   offer: { value: 'offer', label: 'Оффер', color: '#F59E0B' },
+  closed: { value: 'closed', label: 'Закрыто', color: '#EF4444' },
 };
 
 export function normalizeSource(source?: string | null) {
@@ -40,5 +41,5 @@ export function getStatusOptions(
   });
 
   if (!includeRejected) return activeOptions;
-  return [...activeOptions, DEFAULT_STATUS_CONFIG.rejected];
+  return [...activeOptions, DEFAULT_STATUS_CONFIG.closed];
 }

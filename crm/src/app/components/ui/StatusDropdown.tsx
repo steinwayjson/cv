@@ -13,7 +13,7 @@ interface StatusDropdownProps {
 
 export function StatusDropdown({ value, onChange, fullWidth, source, disabled }: StatusDropdownProps) {
   const { data: stages = [] } = usePipeline(source ?? undefined);
-  const options = useMemo(() => getStatusOptions(stages), [stages]);
+  const options = useMemo(() => getStatusOptions(stages, true), [stages]);
   const current = options.find(option => option.value === value) ?? DEFAULT_STATUS_CONFIG[value];
 
   return (

@@ -3,8 +3,9 @@ import { ru } from 'date-fns/locale';
 import { ArrowRight, RefreshCw } from 'lucide-react';
 import { ScoreBadge } from '../ui/ScoreBadge';
 import { StatusDropdown } from '../ui/StatusDropdown';
+import { ClosedReasonDropdown } from '../ui/ClosedReasonDropdown';
 import { SourceIcon } from '../ui/SourceIcon';
-import { useUpdateVacancyStatus } from '../../hooks/useVacancies';
+import { useUpdateVacancyStatus, useUpdateClosedReason } from '../../hooks/useVacancies';
 import { useReanalyzingVacancyIds } from '../../hooks/useReanalyze';
 import type { Vacancy, VacancyStatus } from '../../lib/types';
 
@@ -24,6 +25,7 @@ export function VacancyTable({
   onToggleSelectAll,
 }: VacancyTableProps) {
   const updateStatus = useUpdateVacancyStatus();
+  const updateClosedReason = useUpdateClosedReason();
   const reanalyzingIds = useReanalyzingVacancyIds();
   const isSelectable = !!onToggleSelect;
 
@@ -31,7 +33,7 @@ export function VacancyTable({
     updateStatus.mutate({
       id: vacancy.id,
       status,
-      lastStage: status === 'rejected' ? vacancy.status : undefined,
+      lastStage: (status === 'rejected' || status === 'closed') ? vacancy.status : undefined,
     });
   };
 
@@ -98,12 +100,21 @@ export function VacancyTable({
                   {vacancy.salary || '-'}
                 </td>
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                  <StatusDropdown
-                    value={vacancy.status}
-                    source={vacancy.source}
-                    disabled={isReanalyzing}
-                    onChange={(status) => handleStatusChange(vacancy, status)}
-                  />
+                  <div className="flex items-center gap-1">
+                    <StatusDropdown
+                      value={vacancy.status}
+                      source={vacancy.source}
+                      disabled={isReanalyzing}
+                      onChange={(status) => handleStatusChange(vacancy, status)}
+                    />
+                    {vacancy.status === 'closed' && (
+                      <ClosedReasonDropdown
+                        value={vacancy.closed_reason}
+                        disabled={isReanalyzing}
+                        onChange={(reason) => updateClosedReason.mutate({ id: vacancy.id, closedReason: reason })}
+                      />
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                   {vacancy.published_at

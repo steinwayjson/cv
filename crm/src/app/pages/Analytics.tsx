@@ -3,6 +3,7 @@ import { useVacancies } from '../hooks/useVacancies';
 import { useDistinctSources } from '../hooks/useDistinctSources';
 import { canonicalSource } from '../lib/sources';
 import { Funnel } from '../components/dashboard/Funnel';
+import { getClosedReasonOption } from '../lib/closedReasons';
 import {
   LineChart,
   Line,
@@ -73,13 +74,16 @@ export function Analytics() {
     }));
   }, [vacancies]);
 
-  const topCompanies = useMemo(() =>
-    vacancies
-      .filter(v => v.score != null)
-      .sort((a, b) => (b.score || 0) - (a.score || 0))
-      .slice(0, 10)
-      .map(v => ({ name: v.company_name || 'Без названия', score: v.score || 0 })),
-    [vacancies]);
+  const closedReasonsData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    vacancies.filter(v => v.status === 'closed').forEach(v => {
+      const reason = v.closed_reason || 'unknown';
+      counts[reason] = (counts[reason] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .map(([reason, count]) => ({ reason, count }));
+  }, [vacancies]);
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -214,21 +218,33 @@ export function Analytics() {
           )}
         </div>
 
-        {/* Top companies */}
+        {/* Closed reasons */}
         <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
-          <h3 className="font-semibold mb-4">Топ компаний по score</h3>
-          {topCompanies.length === 0 ? (
-            <p className="text-gray-400 text-sm">Нет оценённых вакансий</p>
+          <h3 className="font-semibold mb-4">Причины закрытия</h3>
+          {closedReasonsData.length === 0 ? (
+            <p className="text-gray-400 text-sm">Нет закрытых вакансий</p>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={topCompanies} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis dataKey="name" type="category" width={90} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="score" fill="#3B82F6" />
-              </BarChart>
-            </ResponsiveContainer>
+            <table className="w-full text-sm">
+              <thead className="border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                  <th className="text-left py-2">Причина</th>
+                  <th className="text-right py-2">Кол-во</th>
+                </tr>
+              </thead>
+              <tbody>
+                {closedReasonsData.map(({ reason, count }) => {
+                  const option = getClosedReasonOption(reason);
+                  return (
+                    <tr key={reason} className="border-b border-gray-200 dark:border-gray-700">
+                      <td className="py-2" style={{ color: option?.color ?? '#6B7280' }}>
+                        {option?.label ?? reason}
+                      </td>
+                      <td className="text-right py-2">{count}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
       </div>

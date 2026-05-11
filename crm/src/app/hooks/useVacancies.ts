@@ -35,6 +35,19 @@ export function useUpdateVacancyStatus() {
   });
 }
 
+export function useUpdateClosedReason() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, closedReason }: { id: string; closedReason: string | null }) =>
+      db.vacancies.updateClosedReason(id, closedReason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vacancies'] });
+    },
+    onError: (e: Error) => toast.error(`Ошибка сохранения причины: ${e.message}`),
+  });
+}
+
 export function useUpdateVacancyNotes() {
   const queryClient = useQueryClient();
 

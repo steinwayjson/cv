@@ -28,7 +28,7 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
     const statusOrder = ACTIVE_STAGE_STATUSES as unknown as string[];
 
     for (const v of pool) {
-      if (v.status === 'rejected') {
+      if (v.status === 'closed') {
         const cutoff = v.last_stage ?? 'new';
         for (const s of statusOrder) {
           c[s]++;
@@ -44,7 +44,7 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
     return c;
   }, [pool]);
 
-  const rejected = useMemo(() => pool.filter(v => v.status === 'rejected').length, [pool]);
+  const closedCount = useMemo(() => pool.filter(v => v.status === 'closed').length, [pool]);
   const title = source ? `Воронка · ${source}` : 'Воронка';
 
   return (
@@ -86,15 +86,15 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
           );
         })}
 
-        {rejected > 0 && (
+        {closedCount > 0 && (
           <div className="flex items-start ml-2">
             <div className="flex flex-col items-center mt-2 mx-1 w-8 flex-shrink-0">
               <ChevronRight size={14} className="text-red-300 dark:text-red-700" />
             </div>
             <div className="flex flex-col items-center min-w-[52px]">
-              <span className="text-2xl font-bold leading-none text-red-500">{rejected}</span>
+              <span className="text-2xl font-bold leading-none text-red-500">{closedCount}</span>
               <span className="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-1 leading-tight">
-                Отказы
+                Закрыто
               </span>
             </div>
           </div>

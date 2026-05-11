@@ -1,4 +1,18 @@
-export type VacancyStatus = 'new' | 'sent' | 'replied' | 'interview' | 'rejected' | 'offer';
+export type VacancyStatus = 'new' | 'sent' | 'replied' | 'interview' | 'rejected' | 'offer' | 'closed';
+
+export const CLOSED_REASONS = [
+  'rejected_by_me',
+  'rejected_by_company',
+  'ghosted',
+  'low_salary',
+  'irrelevant',
+  'spam',
+  'duplicate',
+  'archived',
+] as const;
+
+export type ClosedReason = typeof CLOSED_REASONS[number];
+
 export type Category = 'горячая' | 'норм' | 'мимо';
 export type Source = 'HH' | 'TG' | 'LinkedIn' | 'Сайт' | string;
 export type PromptKey = 'parser' | 'analyzer' | 'scoring' | 'copywriter' | 'profile' | (string & {});
@@ -28,7 +42,8 @@ export interface Vacancy {
   role: string;
   salary?: string;
   status: VacancyStatus;
-  last_stage?: VacancyStatus | null; // статус до rejected
+  last_stage?: VacancyStatus | null; // статус до rejected/closed
+  closed_reason?: ClosedReason | null; // причина закрытия (при status === 'closed')
   source: Source;
   notes?: string;
   next_action?: string;

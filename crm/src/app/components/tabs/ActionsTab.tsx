@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { StatusDropdown } from '../ui/StatusDropdown';
+import { ClosedReasonDropdown } from '../ui/ClosedReasonDropdown';
 import { Modal } from '../ui/Modal';
-import { useUpdateVacancyStatus, useUpdateVacancyNotes, useDeleteVacancy } from '../../hooks/useVacancies';
+import { useUpdateVacancyStatus, useUpdateVacancyNotes, useUpdateClosedReason, useDeleteVacancy } from '../../hooks/useVacancies';
 import { useIsVacancyReanalyzing } from '../../hooks/useReanalyze';
 import { toast } from 'sonner';
 import type { Vacancy, VacancyStatus } from '../../lib/types';
@@ -20,6 +21,7 @@ export function ActionsTab({ vacancy, onDelete }: ActionsTabProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const updateStatus = useUpdateVacancyStatus();
+  const updateClosedReason = useUpdateClosedReason();
   const updateNotes = useUpdateVacancyNotes();
   const deleteVacancy = useDeleteVacancy();
   const isReanalyzing = useIsVacancyReanalyzing(vacancy.id);
@@ -67,11 +69,23 @@ export function ActionsTab({ vacancy, onDelete }: ActionsTabProps) {
           onChange={(status) => updateStatus.mutate({
             id: vacancy.id,
             status,
-            lastStage: status === 'rejected' ? vacancy.status : undefined,
+            lastStage: (status === 'rejected' || status === 'closed') ? vacancy.status : undefined,
           })}
           fullWidth
         />
       </div>
+
+      {vacancy.status === 'closed' && (
+        <div>
+          <label className="block text-sm font-medium mb-2">Причина закрытия</label>
+          <ClosedReasonDropdown
+            value={vacancy.closed_reason}
+            disabled={isReanalyzing}
+            onChange={(reason) => updateClosedReason.mutate({ id: vacancy.id, closedReason: reason })}
+            fullWidth
+          />
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium mb-2">Заметки</label>

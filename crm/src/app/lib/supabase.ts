@@ -220,7 +220,7 @@ export const db = {
       if (supabase) {
         const vacData = await fetchPagedRows<any>((from, to) => supabase
           .from('vacancies')
-          .select('id, company_id, link, role, salary, status, last_stage, source, notes, next_action, next_action_at, published_at, priority, source_type, score, category, reason, parser_prompt_version, parsed_at, analyzer_prompt_version, analyzed_at, scoring_prompt_version, scored_at, copywriter_prompt_version, copywritten_at, companies (name, site, branch)')
+          .select('id, company_id, link, role, salary, status, last_stage, closed_reason, source, notes, next_action, next_action_at, published_at, priority, source_type, score, category, reason, parser_prompt_version, parsed_at, analyzer_prompt_version, analyzed_at, scoring_prompt_version, scored_at, copywriter_prompt_version, copywritten_at, companies (name, site, branch)')
           .order('published_at', { ascending: false, nullsFirst: false })
           .range(from, to));
 
@@ -303,9 +303,12 @@ export const db = {
     async updateStatus(id: string, status: string, lastStage?: string): Promise<void> {
       if (supabase) {
         const payload: Record<string, string | null> = { status };
-        if (status === 'rejected' && lastStage) payload.last_stage = lastStage;
-        // Если выходим из rejected — сбрасываем last_stage
-        if (status !== 'rejected') payload.last_stage = null;
+        if ((status === 'rejected' || status === 'closed') && lastStage) payload.last_stage = lastStage;
+        // Сбрасываем last_stage и closed_reason при выходе из rejected/closed
+        if (status !== 'rejected' && status !== 'closed') {
+          payload.last_stage = null;
+          payload.closed_reason = null;
+        }
         const { error } = await supabase.from('vacancies').update(payload).eq('id', id);
         if (error) throw error;
         return;
@@ -313,9 +316,25 @@ export const db = {
       await delay(100);
       const vacancy = mockVacanciesStore.find(v => v.id === id);
       if (vacancy) {
-        if (status === 'rejected' && lastStage) vacancy.last_stage = lastStage as any;
-        if (status !== 'rejected') vacancy.last_stage = null;
+        if ((status === 'rejected' || status === 'closed') && lastStage) vacancy.last_stage = lastStage as any;
+        if (status !== 'rejected' && status !== 'closed') {
+          vacancy.last_stage = null;
+          vacancy.closed_reason = null;
+        }
         vacancy.status = status as any;
+      }
+    },
+
+    async updateClosedReason(id: string, closedReason: string | null): Promise<void> {
+      if (supabase) {
+        const { error } = await supabase.from('vacancies').update({ closed_reason: closedReason }).eq('id', id);
+        if (error) throw error;
+        return;
+      }
+      await delay(100);
+      const vacancy = mockVacanciesStore.find(v => v.id === id);
+      if (vacancy) {
+        vacancy.closed_reason = closedReason as any;
       }
     },
 
