@@ -28,16 +28,12 @@ import {
   useSeedPipelinePreset,
   useUpdatePipeline,
 } from '../../hooks/usePipeline';
-import { usePipelineSources } from '../../hooks/useDistinctSources';
+import { FIXED_SOURCES, canonicalSource } from '../../lib/sources';
 import { toast } from 'sonner';
 import type { PipelineStage } from '../../lib/types';
 
 const PRESET_COLORS = ['#6B7280', '#3B82F6', '#F59E0B', '#10B981', '#8B5CF6', '#EF4444'];
 const EMPTY_STAGES: PipelineStage[] = [];
-
-function normalizeSource(value: string) {
-  return value.trim();
-}
 
 function SortableStage({
   stage,
@@ -109,11 +105,7 @@ function SortableStage({
 }
 
 export function PipelineEditor() {
-  const { data: sourceRows = [] } = usePipelineSources();
-  const sources = useMemo(
-    () => sourceRows.map(normalizeSource).filter(Boolean).sort((a, b) => a.localeCompare(b)),
-    [sourceRows]
-  );
+  // Табы: все фиксированные источники (HeadHunter, LinkedIn, SuperJob, Telegram, Zarplata, Habr Career)
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const { data } = usePipelineStrict(selectedSource);
   const stages = data ?? EMPTY_STAGES;
@@ -134,13 +126,19 @@ export function PipelineEditor() {
   const [pendingStageDeleteId, setPendingStageDeleteId] = useState<string | null>(null);
   const [pendingSourceDelete, setPendingSourceDelete] = useState<string | null>(null);
 
+  // Все табы — фиксированные источники (всегда видны, не зависят от БД)
+  const allTabSources = useMemo(() => [...FIXED_SOURCES], []);
+
   useEffect(() => setItems(stages), [stages]);
 
+  // При смене таба на источник не из списка — сбрасываем на дефолт
   useEffect(() => {
-    if (selectedSource && !sources.some(source => source.toLowerCase() === selectedSource.toLowerCase())) {
-      setSelectedSource(null);
+    if (selectedSource) {
+      const canonical = canonicalSource(selectedSource);
+      const isKnown = allTabSources.some(s => canonicalSource(s) === canonical);
+      if (!isKnown) setSelectedSource(null);
     }
-  }, [selectedSource, sources]);
+  }, [selectedSource, allTabSources]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -167,23 +165,21 @@ export function PipelineEditor() {
   };
 
   const handleAddSource = () => {
-    const source = normalizeSource(newSource);
+    const source = newSource.trim();
     if (!source) return;
-
     createSource.mutate(source, {
       onSuccess: () => {
         setSelectedSource(source);
         setNewSource('');
         toast.success(`Источник ${source} добавлен`);
       },
-      onError: error => toast.error(error.message || 'Не удалось добавить источник'),
+      onError: (error: Error) => toast.error(error.message || 'Не удалось добавить источник'),
     });
   };
 
   const handleAddStage = () => {
     const name = newStageName.trim();
     if (!name) return;
-
     addStage.mutate(
       {
         name,
@@ -197,7 +193,7 @@ export function PipelineEditor() {
           setAddingStage(false);
           toast.success('Этап добавлен');
         },
-        onError: error => toast.error(error.message || 'Не удалось добавить этап'),
+        onError: (error: Error) => toast.error(error.message || 'Не удалось добавить этап'),
       }
     );
   };
@@ -209,7 +205,7 @@ export function PipelineEditor() {
         setPendingStageDeleteId(null);
         toast.success('Этап удалён');
       },
-      onError: error => {
+      onError: (error: Error) => {
         setPendingStageDeleteId(null);
         toast.error(error.message || 'Не удалось удалить этап');
       },
@@ -218,24 +214,32 @@ export function PipelineEditor() {
 
   const confirmSourceDelete = () => {
     if (!pendingSourceDelete) return;
-    const source = pendingSourceDelete;
-    deleteSource.mutate(source, {
+    const src = pendingSourceDelete;
+    deleteSource.mutate(src, {
       onSuccess: () => {
         setPendingSourceDelete(null);
-        if (selectedSource?.toLowerCase() === source.toLowerCase()) setSelectedSource(null);
-        toast.success(`Настройки источника ${source} удалены`);
+        if (selectedSource?.toLowerCase() === src.toLowerCase()) setSelectedSource(null);
+        toast.success(`Настройки источника ${src} удалены`);
       },
-      onError: error => {
+      onError: (error: Error) => {
         setPendingSourceDelete(null);
         toast.error(error.message || 'Не удалось удалить источник');
       },
     });
   };
 
+  // Проверка: можно ли удалить таб источника
+  const canDeleteTab = (source: string) => {
+    const canonical = canonicalSource(source);
+    return !(FIXED_SOURCES as readonly string[]).includes(canonical);
+  };
+
   return (
     <div className="space-y-4">
+      {/* ── Табы источников ── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex gap-1 flex-wrap border-b border-gray-200 dark:border-gray-700 pb-3 flex-1">
+          {/* Дефолтная воронка */}
           <button
             type="button"
             onClick={() => setSelectedSource(null)}
@@ -247,9 +251,10 @@ export function PipelineEditor() {
           >
             По умолчанию
           </button>
-          {sources.map(source => {
-            const active = selectedSource?.toLowerCase() === source.toLowerCase();
 
+          {/* Фиксированные источники */}
+          {allTabSources.map(source => {
+            const active = selectedSource?.toLowerCase() === source.toLowerCase();
             return (
               <div
                 key={source}
@@ -266,35 +271,41 @@ export function PipelineEditor() {
                 >
                   {source}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setPendingSourceDelete(source)}
-                  className={`rounded p-0.5 ${
-                    active ? 'hover:bg-blue-700' : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                  title="Удалить источник"
-                >
-                  <X size={13} />
-                </button>
+                {/* Кнопка удаления — только для не-фиксированных источников */}
+                {canDeleteTab(source) && (
+                  <button
+                    type="button"
+                    onClick={() => setPendingSourceDelete(source)}
+                    className={`rounded p-0.5 ${
+                      active ? 'hover:bg-blue-700' : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                    title="Удалить источник"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
+
+        {/* Кнопка «Создать базовые этапы» */}
         <button
           type="button"
           onClick={() =>
             seedPreset.mutate(undefined, {
               onSuccess: () => toast.success('Базовые этапы созданы'),
-              onError: error => toast.error(error.message || 'Не удалось создать этапы'),
+              onError: (error: Error) => toast.error(error.message || 'Не удалось создать этапы'),
             })
           }
           disabled={seedPreset.isPending}
           className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 whitespace-nowrap"
         >
-          По умолчанию
+          {seedPreset.isPending ? 'Создание...' : 'Создать базовые этапы'}
         </button>
       </div>
 
+      {/* ── Добавить свой источник ── */}
       <div className="flex gap-2">
         <input
           type="text"
@@ -303,7 +314,7 @@ export function PipelineEditor() {
           onKeyDown={event => {
             if (event.key === 'Enter') handleAddSource();
           }}
-          placeholder="Новый источник... (например: telegram)"
+          placeholder="Новый источник... (например: МойКанал)"
           className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-sm"
         />
         <button
@@ -316,12 +327,13 @@ export function PipelineEditor() {
         </button>
       </div>
 
+      {/* ── Этапы воронки ── */}
       {items.length === 0 && (
         <div className="text-center py-7 text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded">
           <p className="text-sm">
             {selectedSource
-              ? `Для ${selectedSource} пока нет своих этапов`
-              : 'Базовая воронка пока не настроена'}
+              ? `Для «${selectedSource}» этапы пока не созданы`
+              : 'Базовая воронка пока не настроена — нажмите «Создать базовые этапы»'}
           </p>
         </div>
       )}
@@ -339,7 +351,7 @@ export function PipelineEditor() {
                     { id, name },
                     {
                       onSuccess: () => toast.success('Название сохранено'),
-                      onError: error => toast.error(error.message || 'Не удалось сохранить название'),
+                      onError: (error: Error) => toast.error(error.message || 'Не удалось сохранить название'),
                     }
                   )
                 }
@@ -349,6 +361,7 @@ export function PipelineEditor() {
         </SortableContext>
       </DndContext>
 
+      {/* ── Добавить этап ── */}
       {addingStage ? (
         <div className="flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded">
           <div className="flex gap-1">

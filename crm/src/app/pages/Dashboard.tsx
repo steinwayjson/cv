@@ -10,7 +10,7 @@ import { VacancyTable } from '../components/dashboard/VacancyTable';
 import { VacancyCard } from '../components/dashboard/VacancyCard';
 import { SidePanel } from '../components/dashboard/SidePanel';
 import { TableSkeleton } from '../components/ui/Skeleton';
-import { normalizeSource } from '../lib/statuses';
+import { canonicalSource } from '../lib/sources';
 import type { Vacancy } from '../lib/types';
 import type { FilterValues } from '../components/dashboard/Filters';
 
@@ -32,7 +32,7 @@ export function Dashboard() {
     }
     if (filters.status && v.status !== filters.status) return false;
     if (filters.source) {
-      if (normalizeSource(v.source) !== normalizeSource(filters.source)) return false;
+      if (canonicalSource(v.source) !== canonicalSource(filters.source)) return false;
     }
     if (filters.period && v.published_at) {
       const age = Date.now() - new Date(v.published_at).getTime();

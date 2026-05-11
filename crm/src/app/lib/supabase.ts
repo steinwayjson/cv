@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { mockVacancies, mockPipelineStages, mockProfile, mockAgentConfig } from './mockData';
-import { DEFAULT_SOURCES, canonicalSource, sourceMatches, uniqueCanonicalSources } from './sources';
+import { FIXED_SOURCES, canonicalSource, sourceMatches, uniqueCanonicalSources } from './sources';
 import type { Vacancy, PipelineStage, Profile, AgentConfig, Prompt, PromptKey, AgentKey, AnalysisLog, TgChannel, ParserRun, RawVacancy } from './types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
@@ -37,9 +37,10 @@ async function fetchPagedRows<T>(buildQuery: (from: number, to: number) => Promi
 
 // ─── Пресеты воронок по источникам ─────────────────────────────────────────
 type PresetStage = { name: string; color: string };
-export const PRESET_SOURCES = [...DEFAULT_SOURCES];
+export const PRESET_SOURCES = [...FIXED_SOURCES];
 
 export const PIPELINE_PRESETS: Record<string, PresetStage[]> = {
+  // Общая воронка (source = null) — базовый костяк
   default: [
     { name: 'Новые',              color: '#6B7280' },
     { name: 'Отправлено',         color: '#3B82F6' },
@@ -48,30 +49,44 @@ export const PIPELINE_PRESETS: Record<string, PresetStage[]> = {
     { name: 'Оффер',              color: '#10B981' },
   ],
   HeadHunter: [
-    { name: 'Найдено на HH',      color: '#D6001C' }, // HH red
+    { name: 'Найдено на HH',      color: '#D6001C' },
     { name: 'Откликнулся',        color: '#E05B5B' },
     { name: 'Ответ HR',           color: '#F59E0B' },
     { name: 'Техническое',        color: '#8B5CF6' },
     { name: 'Оффер',              color: '#10B981' },
   ],
-  Telegram: [
-    { name: 'Нашёл в канале',     color: '#6B7280' },
-    { name: 'Написал в ЛС',       color: '#2AABEE' }, // Telegram blue
-    { name: 'Ответили',           color: '#F59E0B' },
-    { name: 'Созвон',             color: '#8B5CF6' },
-    { name: 'Оффер',              color: '#10B981' },
-  ],
   LinkedIn: [
     { name: 'Нашёл профиль',      color: '#6B7280' },
-    { name: 'Отправил InMail',    color: '#0A66C2' }, // LinkedIn blue
+    { name: 'Отправил InMail',    color: '#0A66C2' },
     { name: 'Ответили',           color: '#F59E0B' },
     { name: 'Интервью',           color: '#8B5CF6' },
     { name: 'Оффер',              color: '#10B981' },
   ],
-  'Сайт': [
-    { name: 'Нашёл вакансию',     color: '#6B7280' },
-    { name: 'Занёс в CRM',        color: '#6366F1' },
-    { name: 'Откликнулся',        color: '#F59E0B' },
+  SuperJob: [
+    { name: 'Найдено на SJ',      color: '#40A83E' },
+    { name: 'Откликнулся',        color: '#E05B5B' },
+    { name: 'Ответ HR',           color: '#F59E0B' },
+    { name: 'Собеседование',      color: '#8B5CF6' },
+    { name: 'Оффер',              color: '#10B981' },
+  ],
+  Telegram: [
+    { name: 'Нашёл в канале',     color: '#6B7280' },
+    { name: 'Написал в ЛС',       color: '#2AABEE' },
+    { name: 'Ответили',           color: '#F59E0B' },
+    { name: 'Созвон',             color: '#8B5CF6' },
+    { name: 'Оффер',              color: '#10B981' },
+  ],
+  Zarplata: [
+    { name: 'Найдено на ZP',      color: '#FF5722' },
+    { name: 'Откликнулся',        color: '#E05B5B' },
+    { name: 'Ответ HR',           color: '#F59E0B' },
+    { name: 'Собеседование',      color: '#8B5CF6' },
+    { name: 'Оффер',              color: '#10B981' },
+  ],
+  'Habr Career': [
+    { name: 'Найдено на Habr',   color: '#4B8BBE' },
+    { name: 'Откликнулся',        color: '#E05B5B' },
+    { name: 'Ответили',           color: '#F59E0B' },
     { name: 'Интервью',           color: '#8B5CF6' },
     { name: 'Оффер',              color: '#10B981' },
   ],
@@ -523,9 +538,16 @@ export const db = {
       if (stage) stage.name = name;
     },
 
-    // Заполнить пресеты для всех источников (только если этапов ещё нет)
+    // Заполнить пресеты для всех источников.
+    // sources — дополнительные источники из вакансий (будут добавлены к FIXED_SOURCES).
+    // Каждый источник сеется только если для него ещё нет этапов в БД.
     async seedPreset(sources: string[]): Promise<void> {
-      const slots: Array<string | null> = [null, ...uniqueCanonicalSources(sources)];
+      // Всегда включаем дефолтную воронку (null) + все фиксированные источники
+      const fixedSlots: Array<string | null> = [null, ...FIXED_SOURCES];
+      // Плюс уникальные канонические источники из вакансий, которых нет в FIXED_SOURCES
+      const extraSources = uniqueCanonicalSources(sources)
+        .filter(s => !(FIXED_SOURCES as readonly string[]).includes(s));
+      const slots: Array<string | null> = [...fixedSlots, ...extraSources];
 
       if (supabase) {
         for (const source of slots) {
@@ -570,7 +592,10 @@ export const db = {
     },
 
     async seedPresetFast(sources: string[]): Promise<void> {
-      const slots: Array<string | null> = [null, ...uniqueCanonicalSources(sources)];
+      const fixedSlots: Array<string | null> = [null, ...FIXED_SOURCES];
+      const extraSources = uniqueCanonicalSources(sources)
+        .filter(s => !(FIXED_SOURCES as readonly string[]).includes(s));
+      const slots: Array<string | null> = [...fixedSlots, ...extraSources];
 
       if (supabase) {
         const { data: existing, error } = await supabase

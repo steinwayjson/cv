@@ -2,11 +2,11 @@ import { memo, useMemo } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useVacancies } from '../../hooks/useVacancies';
 import { usePipeline } from '../../hooks/usePipeline';
+import { canonicalSource } from '../../lib/sources';
 import {
   ACTIVE_STAGE_STATUSES,
   DEFAULT_STATUS_CONFIG,
   getStatusOptions,
-  normalizeSource,
 } from '../../lib/statuses';
 
 interface FunnelProps {
@@ -19,7 +19,7 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
   const statusOptions = useMemo(() => getStatusOptions(stages, false), [stages]);
 
   const pool = useMemo(
-    () => source ? vacancies.filter(v => normalizeSource(v.source) === normalizeSource(source)) : vacancies,
+    () => source ? vacancies.filter(v => canonicalSource(v.source) === canonicalSource(source)) : vacancies,
     [vacancies, source]
   );
 

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useVacancies } from '../hooks/useVacancies';
 import { useDistinctSources } from '../hooks/useDistinctSources';
+import { canonicalSource } from '../lib/sources';
 import { Funnel } from '../components/dashboard/Funnel';
 import {
   LineChart,
@@ -96,7 +97,7 @@ export function Analytics() {
           <p className="text-xs text-gray-400">
             {funnelSource ?? 'Общая'} · {
               funnelSource
-                ? vacancies.filter(v => v.source?.toLowerCase() === funnelSource.toLowerCase()).length
+                ? vacancies.filter(v => canonicalSource(v.source) === canonicalSource(funnelSource)).length
                 : vacancies.length
             } вакансий
           </p>
