@@ -1,4 +1,4 @@
-export type VacancyStatus = 'new' | 'sent' | 'replied' | 'interview' | 'rejected' | 'offer' | 'closed';
+export type VacancyStatus = 'new' | 'sent' | 'replied' | 'interview' | 'rejected' | 'offer' | 'closed' | `stage_${number}`;
 
 export const CLOSED_REASONS = [
   'rejected_by_me',

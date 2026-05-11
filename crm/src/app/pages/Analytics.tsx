@@ -4,6 +4,7 @@ import { useDistinctSources } from '../hooks/useDistinctSources';
 import { canonicalSource } from '../lib/sources';
 import { Funnel } from '../components/dashboard/Funnel';
 import { getClosedReasonOption } from '../lib/closedReasons';
+import { isRepliedOrBeyond } from '../lib/statuses';
 import {
   LineChart,
   Line,
@@ -66,7 +67,7 @@ export function Analytics() {
       const src = v.source || 'Другой';
       if (!bySource[src]) bySource[src] = { sent: 0, replied: 0 };
       bySource[src].sent++;
-      if (['replied', 'interview', 'offer'].includes(v.status)) bySource[src].replied++;
+      if (isRepliedOrBeyond(v.status)) bySource[src].replied++;
     });
     return Object.entries(bySource).map(([source, { sent, replied }]) => ({
       source, sent, replied,

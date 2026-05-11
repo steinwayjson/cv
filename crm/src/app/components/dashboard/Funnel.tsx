@@ -4,9 +4,9 @@ import { useVacancies } from '../../hooks/useVacancies';
 import { usePipeline } from '../../hooks/usePipeline';
 import { canonicalSource } from '../../lib/sources';
 import {
-  ACTIVE_STAGE_STATUSES,
   DEFAULT_STATUS_CONFIG,
   getStatusOptions,
+  orderIndexForStatus,
 } from '../../lib/statuses';
 
 interface FunnelProps {
@@ -23,26 +23,51 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
     [vacancies, source]
   );
 
+  // Собираем counts для каждого этапа: итерируем по отсортированным этапам
+  const sortedOptions = useMemo(
+    () => [...statusOptions].sort((a, b) => {
+      const idxA = orderIndexForStatus(a.value) ?? Infinity;
+      const idxB = orderIndexForStatus(b.value) ?? Infinity;
+      return idxA - idxB;
+    }),
+    [statusOptions]
+  );
+
   const counts = useMemo(() => {
-    const c: Record<string, number> = { new: 0, sent: 0, replied: 0, interview: 0, offer: 0 };
-    const statusOrder = ACTIVE_STAGE_STATUSES as unknown as string[];
+    const c: Record<string, number> = {};
+    const optionKeys = sortedOptions.map(o => o.value);
+
+    // Инициализируем нулями
+    for (const key of optionKeys) {
+      c[key] = 0;
+    }
 
     for (const v of pool) {
       if (v.status === 'closed') {
-        const cutoff = v.last_stage ?? 'new';
-        for (const s of statusOrder) {
-          c[s]++;
-          if (s === cutoff) break;
+        // Для closed: засчитываем все этапы до last_stage
+        const cutoffIdx = orderIndexForStatus(v.last_stage ?? 'new');
+        for (const key of optionKeys) {
+          const keyIdx = orderIndexForStatus(key);
+          if (keyIdx !== null && cutoffIdx !== null && keyIdx <= cutoffIdx) {
+            c[key] = (c[key] ?? 0) + 1;
+          }
         }
+      } else if (v.status === 'rejected') {
+        // rejected не показываем в активной воронке
+        continue;
       } else {
-        for (const s of statusOrder) {
-          c[s]++;
-          if (s === v.status) break;
+        // Для нормальных статусов: засчитываем все этапы от начала до текущего
+        const currentIdx = orderIndexForStatus(v.status);
+        for (const key of optionKeys) {
+          const keyIdx = orderIndexForStatus(key);
+          if (keyIdx !== null && currentIdx !== null && keyIdx <= currentIdx) {
+            c[key] = (c[key] ?? 0) + 1;
+          }
         }
       }
     }
     return c;
-  }, [pool]);
+  }, [pool, sortedOptions]);
 
   const closedCount = useMemo(() => pool.filter(v => v.status === 'closed').length, [pool]);
   const title = source ? `Воронка · ${source}` : 'Воронка';
@@ -54,16 +79,16 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
       </h2>
 
       <div className="flex items-start flex-wrap gap-x-1 gap-y-4">
-        {ACTIVE_STAGE_STATUSES.map((status, idx) => {
-          const count = counts[status] ?? 0;
-          const prevCount = idx > 0 ? (counts[ACTIVE_STAGE_STATUSES[idx - 1]] ?? 0) : null;
+        {sortedOptions.map((option, idx) => {
+          const count = counts[option.value] ?? 0;
+          const prevOption = idx > 0 ? sortedOptions[idx - 1] : null;
+          const prevCount = prevOption ? (counts[prevOption.value] ?? 0) : null;
           const conversion = prevCount && prevCount > 0
             ? Math.round((count / prevCount) * 100)
             : null;
-          const option = statusOptions.find(item => item.value === status) ?? DEFAULT_STATUS_CONFIG[status];
 
           return (
-            <div key={status} className="flex items-start">
+            <div key={option.value} className="flex items-start">
               {idx > 0 && (
                 <div className="flex flex-col items-center mt-2 mx-1 w-8 flex-shrink-0">
                   <ChevronRight size={14} className="text-gray-300 dark:text-gray-600" />
