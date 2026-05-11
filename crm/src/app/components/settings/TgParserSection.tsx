@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Modal } from '../ui/Modal';
 import { useTgChannels } from '../../hooks/useTgChannels';
 import { useParserRuns, useParserTrigger } from '../../hooks/useParserRuns';
-import { useRawVacanciesStats, useResetSkipped } from '../../hooks/useRawVacancies';
+import { useRawVacanciesStats, useResetSkipped, useResetProcessing } from '../../hooks/useRawVacancies';
 import type { TgChannel, ParserRun } from '../../lib/types';
 
 function formatRelativeTime(dateStr: string): string {
@@ -74,6 +74,7 @@ export function TgParserSection() {
   const { trigger, isRunning, result } = useParserTrigger();
   const { data: queueStats } = useRawVacanciesStats();
   const resetSkipped = useResetSkipped();
+  const resetProcessing = useResetProcessing();
 
   const [newUsername, setNewUsername] = useState('');
   const [newTitle, setNewTitle] = useState('');
@@ -185,6 +186,17 @@ export function TgParserSection() {
               >
                 <RefreshCw size={11} className={resetSkipped.isPending ? 'animate-spin' : ''} />
                 Сбросить {queueStats.skipped} skipped
+              </button>
+            )}
+            {(queueStats.processing ?? 0) > 0 && (
+              <button
+                onClick={() => resetProcessing.mutate()}
+                disabled={resetProcessing.isPending}
+                className="flex items-center gap-1 text-xs text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 disabled:opacity-60"
+                title="Сбросить processing → new для повторной обработки"
+              >
+                <RefreshCw size={11} className={resetProcessing.isPending ? 'animate-spin' : ''} />
+                Сбросить {queueStats.processing} processing
               </button>
             )}
           </div>

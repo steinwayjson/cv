@@ -25,3 +25,15 @@ export function useResetSkipped() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+export function useResetProcessing() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => db.rawVacancies.resetProcessing(),
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['raw-vacancies-stats'] });
+      toast.success(`${count} записей сброшено в очередь`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}

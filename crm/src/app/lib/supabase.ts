@@ -1033,6 +1033,19 @@ export const db = {
       }
       return 0;
     },
+
+    async resetProcessing(): Promise<number> {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('raw_vacancies')
+          .update({ status: 'new' })
+          .eq('status', 'processing')
+          .select('id');
+        if (error) throw error;
+        return data?.length ?? 0;
+      }
+      return 0;
+    },
   },
 
   parserRuns: {
