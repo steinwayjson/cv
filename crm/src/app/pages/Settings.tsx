@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
+
 import {
   useActivatePromptVersion,
   useCreatePromptVersion,
@@ -251,9 +252,9 @@ export function Settings() {
         <div className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
           <h2 className="text-lg font-semibold mb-1">Настройка воронки</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Источники и названия этапов хранятся в таблице{' '}
-            <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">pipeline_stages</code>.
+            Базовые этапы наследуются по умолчанию
           </p>
+
           <PipelineEditor />
         </div>
       </div>

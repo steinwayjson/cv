@@ -8,6 +8,7 @@ export interface ClosedReasonOption {
 }
 
 export const CLOSED_REASON_OPTIONS: ClosedReasonOption[] = [
+  { value: 'offer',               label: 'Оффер',               color: '#10B981' },
   { value: 'rejected_by_me',      label: 'Я отказался',         color: '#EF4444' },
   { value: 'rejected_by_company', label: 'Отказ компании',      color: '#DC2626' },
   { value: 'ghosted',             label: 'Призрак',             color: '#F59E0B' },

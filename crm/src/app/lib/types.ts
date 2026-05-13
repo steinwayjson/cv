@@ -1,6 +1,7 @@
-export type VacancyStatus = 'new' | 'sent' | 'replied' | 'interview' | 'rejected' | 'offer' | 'closed' | `stage_${number}`;
+export type VacancyStatus = 'new' | 'sent' | 'replied' | 'sobes' | 'meeting' | 'closed' | `stage_${number}`;
 
 export const CLOSED_REASONS = [
+  'offer',
   'rejected_by_me',
   'rejected_by_company',
   'ghosted',
@@ -78,6 +79,8 @@ export interface PipelineStage {
   color: string;
   source?: string | null;
   is_active?: boolean;
+  is_base?: boolean;
+  base_key?: string | null;
 }
 
 export interface Profile {

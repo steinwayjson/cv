@@ -9,13 +9,13 @@ export function useMetrics() {
     const total = vacancies.length;
     const hot = vacancies.filter(v => (v.score || 0) >= 70).length;
 
-    // sent = все статусы с order_index >= 2 (sent, replied, interview, offer, stage_6, ...)
+    // sent = все статусы с order_index >= 2 (sent, replied, sobes, meeting, closed)
     const sent = vacancies.filter(v => {
       const idx = orderIndexForStatus(v.status);
       return idx !== null && idx >= 2;
     }).length;
 
-    // replied = все статусы с order_index >= 3 (replied, interview, offer, stage_6, ...)
+    // replied = все статусы с order_index >= 3 (replied, sobes, meeting, closed)
     const replied = vacancies.filter(v => {
       const idx = orderIndexForStatus(v.status);
       return idx !== null && idx >= 3;

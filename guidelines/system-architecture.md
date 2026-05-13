@@ -75,7 +75,7 @@ Supabase (БД)
 | about | text | Описание вакансии |
 | salary | text | Зарплата |
 | published_at | timestamptz | Дата публикации |
-| status | text | new / sent / replied / interview / rejected / offer |
+| status | text | new / sent / replied / interview / offer |
 | reason | text | Причина отказа (заполняется вручную) |
 | utm | text | UTM для этой вакансии |
 | source | text | Откуда вакансия (hh / linkedin / manual) |

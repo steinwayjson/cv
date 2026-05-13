@@ -7,17 +7,18 @@ export interface StatusOption {
   color: string;
 }
 
-/** Базовые статусы, соответствующие первым 5 этапам воронки */
-export const BASE_STATUS_KEYS: readonly string[] = ['new', 'sent', 'replied', 'interview', 'offer'];
+/** 6 базовых ключей воронки — всегда и у всех */
+export const BASE_STATUS_KEYS: readonly string[] = ['new', 'sent', 'replied', 'sobes', 'meeting', 'closed'];
+
 
 export const DEFAULT_STATUS_CONFIG: Record<string, StatusOption> = {
-  new: { value: 'new', label: 'Новая', color: '#6B7280' },
   sent: { value: 'sent', label: 'Отправлено', color: '#3B82F6' },
   replied: { value: 'replied', label: 'Ответ получен', color: '#EAB308' },
-  interview: { value: 'interview', label: 'Интервью', color: '#22C55E' },
-  rejected: { value: 'rejected', label: 'Отказ', color: '#EF4444' },
-  offer: { value: 'offer', label: 'Оффер', color: '#F59E0B' },
+  sobes: { value: 'sobes', label: 'Собеседование', color: '#8B5CF6' },
+
+  meeting: { value: 'meeting', label: 'Встреча', color: '#22C55E' },
   closed: { value: 'closed', label: 'Закрыто', color: '#EF4444' },
+  new: { value: 'new', label: 'Новое', color: '#6B7280' },
 };
 
 export const DEFAULT_STAGE_COLOR = '#6B7280';
@@ -27,11 +28,16 @@ export function normalizeSource(source?: string | null) {
 }
 
 /**
- * Определяет ключ статуса для этапа по его порядковому индексу.
- * Для первых 5 этапов возвращает базовые ключи (new, sent, replied, interview, offer),
- * для последующих — stage_N.
+ * Определяет ключ статуса для этапа.
+ * Если у этапа есть base_key (например 'sent', 'replied'), использует его.
+ * Иначе генерирует stage_N на основе order_index.
+ * Для первых 6 этапов без base_key возвращает базовые ключи.
  */
-export function statusKeyForStage(orderIndex: number): VacancyStatus {
+export function statusKeyForStage(
+  orderIndex: number,
+  baseKey?: string | null
+): VacancyStatus {
+  if (baseKey) return baseKey as VacancyStatus;
   if (orderIndex >= 1 && orderIndex <= BASE_STATUS_KEYS.length) {
     return BASE_STATUS_KEYS[orderIndex - 1] as VacancyStatus;
   }
@@ -40,7 +46,7 @@ export function statusKeyForStage(orderIndex: number): VacancyStatus {
 
 /**
  * Возвращает порядковый индекс статуса (1-based).
- * Для базовых ключей возвращает их позицию (new → 1, sent → 2, ...).
+ * Для базовых ключей возвращает их позицию (new→1, sent→2, replied→3, sobes→4, meeting→5, closed→6).
  * Для кастомных stage_N извлекает N.
  */
 export function orderIndexForStatus(status: VacancyStatus): number | null {
@@ -54,21 +60,20 @@ export function orderIndexForStatus(status: VacancyStatus): number | null {
 }
 
 /**
- * Проверяет, является ли статус "прогрессным" (не rejected/closed и не начальные этапы).
- * Аналог старой проверки ['replied', 'interview', 'offer'].includes(v.status).
- * Считается, что статусы с order_index >= 3 — это "ответили и дальше".
+ * Проверяет, является ли статус "прогрессным" (ответили и дальше).
+ * Статусы с order_index >= 3 — это "ответили и дальше" (replied, sobes, meeting, closed).
  */
 export function isRepliedOrBeyond(status: VacancyStatus): boolean {
-  if (status === 'rejected' || status === 'closed') return false;
   if (status === 'new' || status === 'sent') return false;
-  return true; // replied, interview, offer, stage_6, stage_7, ...
+  return true; // replied, sobes, meeting, closed, stage_7, ...
 }
 
 /**
  * Собирает опции статусов для выпадающего списка на основе этапов воронки.
- * - Первые 5 этапов маппятся на базовые ключи (new, sent, replied, interview, offer)
- * - Этапы 6+ получают ключи stage_6, stage_7, ...
- * - Если нужно, добавляется статус 'closed' в конце
+ * - Всегда включает «Новое» (new) как первый этап — это базовый статус, который есть у всех источников
+ * - Если у этапа есть base_key (например 'sent', 'replied'), использует его как ключ статуса
+ * - Иначе генерирует stage_N на основе order_index
+ * - Статус rejected добавляется в конце как дополнительная опция
  */
 export function getStatusOptions(
   stages: PipelineStage[] = [],
@@ -76,16 +81,27 @@ export function getStatusOptions(
 ): StatusOption[] {
   const sortedStages = [...stages].sort((a, b) => a.order_index - b.order_index);
 
-  const activeOptions: StatusOption[] = sortedStages.map(stage => {
-    const key = statusKeyForStage(stage.order_index);
+  const seenKeys = new Set<string>();
+  const activeOptions: StatusOption[] = [];
+
+  // 1) Всегда добавляем «Новое» первым — базовый этап, обязательный для всех источников
+  activeOptions.push(DEFAULT_STATUS_CONFIG.new);
+  seenKeys.add('new');
+
+  // 2) Добавляем этапы из воронки, пропуская дубликат 'new'
+  for (const stage of sortedStages) {
+    const key = statusKeyForStage(stage.order_index, stage.base_key);
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+
     const fallback = DEFAULT_STATUS_CONFIG[key];
-    return {
+    activeOptions.push({
       value: key,
       label: stage.name?.trim() || fallback?.label || key,
       color: stage.color || fallback?.color || DEFAULT_STAGE_COLOR,
-    };
-  });
+    });
+  }
 
-  if (!includeClosed) return activeOptions;
-  return [...activeOptions, DEFAULT_STATUS_CONFIG.closed];
+  return activeOptions;
+
 }

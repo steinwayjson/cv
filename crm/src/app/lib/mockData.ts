@@ -8,7 +8,7 @@ export const mockVacancies: Vacancy[] = [
     company_site: 'https://yandex.ru',
     role: 'Senior Frontend Developer',
     salary: '300 000 - 400 000 ₽',
-    status: 'interview',
+    status: 'meeting',
     source: 'HH',
     score: 85,
     category: 'горячая',
@@ -65,7 +65,7 @@ export const mockVacancies: Vacancy[] = [
     company_name: 'Авито',
     role: 'Senior React Developer',
     salary: '320 000 - 420 000 ₽',
-    status: 'new',
+    status: 'sobes',
     source: 'HH',
     score: 88,
     category: 'горячая',
@@ -82,7 +82,7 @@ export const mockVacancies: Vacancy[] = [
     status: 'closed',
     source: 'HH',
     closed_reason: 'rejected_by_company',
-    last_stage: 'interview',
+    last_stage: 'meeting',
     score: 65,
     category: 'норм',
     reason: 'Средний уровень совпадения, зарплата приемлемая.',
@@ -97,11 +97,11 @@ export const mockVacancies: Vacancy[] = [
     salary: '350 000 - 450 000 ₽',
     status: 'closed',
     source: 'TG',
-    closed_reason: 'rejected_by_me',
-    last_stage: 'sent',
+    closed_reason: 'offer',
+    last_stage: 'meeting',
     score: 80,
     category: 'горячая',
-    reason: 'Зарплата отличная, но отказался из-за релокации.',
+    reason: 'Зарплата отличная, прошёл все этапы.',
     published_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -122,12 +122,12 @@ export const mockVacancies: Vacancy[] = [
 ];
 
 export const mockPipelineStages: PipelineStage[] = [
-  { id: 's1', name: 'Новые', order_index: 1, color: '#6B7280' },
-  { id: 's2', name: 'Отправлено', order_index: 2, color: '#3B82F6' },
-  { id: 's3', name: 'Ответ', order_index: 3, color: '#EAB308' },
-  { id: 's4', name: 'Интервью', order_index: 4, color: '#22C55E' },
-  { id: 's5', name: 'Оффер', order_index: 5, color: '#F59E0B' },
-  { id: 's6', name: 'Отказ', order_index: 6, color: '#EF4444' },
+  { id: 's0', name: 'Новые', order_index: 0, color: '#6B7280', is_base: true, base_key: 'new' },
+  { id: 's1', name: 'Отправлено', order_index: 1, color: '#3B82F6', is_base: true, base_key: 'sent' },
+  { id: 's2', name: 'Ответ получен', order_index: 2, color: '#EAB308', is_base: true, base_key: 'replied' },
+  { id: 's3', name: 'Собеседование', order_index: 3, color: '#8B5CF6', is_base: true, base_key: 'sobes' },
+  { id: 's4', name: 'Встреча', order_index: 4, color: '#22C55E', is_base: true, base_key: 'meeting' },
+  { id: 's5', name: 'Закрыто', order_index: 5, color: '#EF4444', is_base: true, base_key: 'closed' },
 ];
 
 export const mockProfile: Profile = {

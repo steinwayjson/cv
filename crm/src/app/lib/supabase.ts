@@ -36,61 +36,72 @@ async function fetchPagedRows<T>(buildQuery: (from: number, to: number) => Promi
 }
 
 // ─── Пресеты воронок по источникам ─────────────────────────────────────────
-type PresetStage = { name: string; color: string };
+type PresetStage = { name: string; color: string; base_key?: string };
 export const PRESET_SOURCES = [...FIXED_SOURCES];
 
+/** 6 базовых этапов — единая воронка для всех источников */
+const BASE_STAGES: (PresetStage & { base_key: string })[] = [
+  { name: 'Новые',         color: '#6B7280', base_key: 'new' },
+  { name: 'Отправлено',    color: '#3B82F6', base_key: 'sent' },
+  { name: 'Ответ получен', color: '#EAB308', base_key: 'replied' },
+  { name: 'Собеседование', color: '#8B5CF6', base_key: 'sobes' },
+  { name: 'Встреча',       color: '#22C55E', base_key: 'meeting' },
+  { name: 'Закрыто',       color: '#EF4444', base_key: 'closed' },
+];
+
+/** Найти base_key по имени этапа (среди базовых этапов) */
+function baseKeyForStageName(name: string): string | null {
+  const base = BASE_STAGES.find(b => b.name.toLowerCase() === name.toLowerCase());
+  return base?.base_key ?? null;
+}
+
+// Для обратной совместимости — каждый источник может иметь свои кастомные пресеты
+// поверх базовых этапов. Если source-specific пресета нет — используем только базовые.
 export const PIPELINE_PRESETS: Record<string, PresetStage[]> = {
-  // Общая воронка (source = null) — базовый костяк
-  default: [
-    { name: 'Новые',              color: '#6B7280' },
-    { name: 'Отправлено',         color: '#3B82F6' },
-    { name: 'Ответ получен',      color: '#F59E0B' },
-    { name: 'Интервью',           color: '#8B5CF6' },
-    { name: 'Оффер',              color: '#10B981' },
-  ],
+  default: BASE_STAGES.map(s => ({ name: s.name, color: s.color })),
   HeadHunter: [
-    { name: 'Найдено на HH',      color: '#D6001C' },
-    { name: 'Откликнулся',        color: '#E05B5B' },
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
     { name: 'Ответ HR',           color: '#F59E0B' },
-    { name: 'Техническое',        color: '#8B5CF6' },
-    { name: 'Оффер',              color: '#10B981' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
   ],
   LinkedIn: [
-    { name: 'Нашёл профиль',      color: '#6B7280' },
-    { name: 'Отправил InMail',    color: '#0A66C2' },
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
     { name: 'Ответили',           color: '#F59E0B' },
-    { name: 'Интервью',           color: '#8B5CF6' },
-    { name: 'Оффер',              color: '#10B981' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
   ],
   SuperJob: [
-    { name: 'Найдено на SJ',      color: '#40A83E' },
-    { name: 'Откликнулся',        color: '#E05B5B' },
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
     { name: 'Ответ HR',           color: '#F59E0B' },
-    { name: 'Собеседование',      color: '#8B5CF6' },
-    { name: 'Оффер',              color: '#10B981' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
   ],
   Telegram: [
-    { name: 'Нашёл в канале',     color: '#6B7280' },
-    { name: 'Написал в ЛС',       color: '#2AABEE' },
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
     { name: 'Ответили',           color: '#F59E0B' },
-    { name: 'Созвон',             color: '#8B5CF6' },
-    { name: 'Оффер',              color: '#10B981' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
   ],
   Zarplata: [
-    { name: 'Найдено на ZP',      color: '#FF5722' },
-    { name: 'Откликнулся',        color: '#E05B5B' },
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
     { name: 'Ответ HR',           color: '#F59E0B' },
-    { name: 'Собеседование',      color: '#8B5CF6' },
-    { name: 'Оффер',              color: '#10B981' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
   ],
   'Habr Career': [
-    { name: 'Найдено на Habr',   color: '#4B8BBE' },
-    { name: 'Откликнулся',        color: '#E05B5B' },
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
     { name: 'Ответили',           color: '#F59E0B' },
-    { name: 'Интервью',           color: '#8B5CF6' },
-    { name: 'Оффер',              color: '#10B981' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
   ],
 };
+
+/** Возвращает базовые этапы воронки (для сидинга) */
+function getBaseStageRows(): (PresetStage & { source: string | null; is_base: boolean; base_key: string })[] {
+  return BASE_STAGES.map((s, idx) => ({
+    name: s.name,
+    color: s.color,
+    order_index: idx + 1,
+    source: null,
+    is_base: true,
+    base_key: s.base_key,
+  }));
+}
 
 function getPipelinePreset(source: string | null): PresetStage[] {
   if (!source) return PIPELINE_PRESETS.default;
@@ -303,9 +314,9 @@ export const db = {
     async updateStatus(id: string, status: string, lastStage?: string): Promise<void> {
       if (supabase) {
         const payload: Record<string, string | null> = { status };
-        if ((status === 'rejected' || status === 'closed') && lastStage) payload.last_stage = lastStage;
-        // Сбрасываем last_stage и closed_reason при выходе из rejected/closed
-        if (status !== 'rejected' && status !== 'closed') {
+        if (status === 'closed' && lastStage) payload.last_stage = lastStage;
+        // Сбрасываем last_stage и closed_reason при выходе из closed
+        if (status !== 'closed') {
           payload.last_stage = null;
           payload.closed_reason = null;
         }
@@ -316,8 +327,8 @@ export const db = {
       await delay(100);
       const vacancy = mockVacanciesStore.find(v => v.id === id);
       if (vacancy) {
-        if ((status === 'rejected' || status === 'closed') && lastStage) vacancy.last_stage = lastStage as any;
-        if (status !== 'rejected' && status !== 'closed') {
+        if (status === 'closed' && lastStage) vacancy.last_stage = lastStage as any;
+        if (status !== 'closed') {
           vacancy.last_stage = null;
           vacancy.closed_reason = null;
         }
@@ -387,44 +398,77 @@ export const db = {
     // strict = true → только exact match, без fallback на дефолт (для редактора)
     async getStages(source?: string, strict = false): Promise<PipelineStage[]> {
       if (supabase) {
-        if (source) {
-          const { data: allSpecific, error: specificErr } = await supabase
-            .from('pipeline_stages')
-            .select('*')
-            .not('source', 'is', null)
-            .order('order_index', { ascending: true });
-          const specific = (allSpecific || []).filter((stage: any) => sourceMatches(stage.source, source));
-          if (strict) {
-            // Если колонка source ещё не существует (migration не выполнена) — graceful fallback
-            if (specificErr) {
-              // column doesn't exist — падаем на все этапы (не-strict поведение)
-            } else {
-              return specific;
-            }
-          } else {
-            if (!specificErr && specific.length > 0) return specific;
-          }
-        }
-        // Дефолтные (source IS NULL) — если колонка ещё не добавлена, fallback на все этапы
-        const { data, error } = await supabase
+        // Загружаем дефолтные (base) этапы — всегда
+        const { data: defaultData, error: defaultErr } = await supabase
           .from('pipeline_stages')
           .select('*')
           .is('source', null)
           .order('order_index', { ascending: true });
-        if (!error) return data || [];
-        // Колонка source не существует — вернуть все этапы без фильтра
-        const { data: all } = await supabase
+        const defaultStages: PipelineStage[] = defaultErr ? [] : (defaultData || []);
+
+        // Если запрошена дефолтная воронка — возвращаем только её
+        if (!source) return defaultStages;
+
+        // Загружаем source-specific этапы
+        const { data: allSpecific, error: specificErr } = await supabase
           .from('pipeline_stages')
           .select('*')
+          .not('source', 'is', null)
           .order('order_index', { ascending: true });
-        return all || [];
+        const specific = (allSpecific || []).filter((stage: any) => sourceMatches(stage.source, source));
+
+        // Строгий режим (для редактора) — только source-specific, без мержа
+        if (strict) {
+          if (specificErr) {
+            // колонка source не существует — падаем на дефолт
+            return defaultStages;
+          }
+          return specific;
+        }
+
+        // Нестрогий режим (для UI) — мержим базовые этапы с source-specific
+        // Этапы с base_key переопределяют базовые; этапы без base_key — кастомные
+        if (!specificErr && specific.length > 0) {
+          const sourceByBaseKey = new Map<string, PipelineStage>(
+            specific.filter(s => s.base_key).map(s => [s.base_key!, s])
+          );
+          const customStages = specific.filter(s => !s.base_key);
+
+          const merged = defaultStages.map(b => {
+            const override = sourceByBaseKey.get(b.base_key!);
+            return override || b;
+          });
+          merged.push(...customStages);
+          merged.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+          return merged;
+        }
+
+        // Нет source-specific — возвращаем дефолт
+        return defaultStages;
       }
+      // MOCK mode
       await delay(200);
-      if (source) {
-        const specific = mockPipelineStore.filter(s => sourceMatches(s.source, source));
-        if (strict || specific.length > 0) return specific;
+      const baseStages = mockPipelineStore.filter(s => !s.source);
+      if (!source) return baseStages;
+
+      const specific = mockPipelineStore.filter(s => sourceMatches(s.source, source));
+      if (strict) return specific;
+
+      if (specific.length > 0) {
+        const sourceByBaseKey = new Map<string, PipelineStage>(
+          specific.filter(s => s.base_key).map(s => [s.base_key!, s])
+        );
+        const customStages = specific.filter(s => !s.base_key);
+        const merged = baseStages.map(b => {
+          const override = sourceByBaseKey.get(b.base_key!);
+          return override || b;
+        });
+        merged.push(...customStages);
+        merged.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+        return merged;
       }
-      return mockPipelineStore.filter(s => !s.source);
+
+      return baseStages;
     },
 
     async getSources(): Promise<string[]> {
@@ -484,6 +528,7 @@ export const db = {
         color: stage.color,
         order_index: idx + 1,
         source: normalized,
+        base_key: baseKeyForStageName(stage.name),
       }));
 
       if (supabase) {
@@ -510,6 +555,7 @@ export const db = {
         })),
       ];
     },
+
 
     async deleteStage(id: string): Promise<void> {
       if (supabase) {
@@ -582,8 +628,10 @@ export const db = {
               color: p.color,
               order_index: idx + 1,
               source,
+              base_key: baseKeyForStageName(p.name),
             }))
           );
+
         }
         return;
       }
@@ -633,8 +681,10 @@ export const db = {
             color: p.color,
             order_index: idx + 1,
             source,
+            base_key: baseKeyForStageName(p.name),
           }));
         });
+
 
         if (rows.length > 0) {
           const { error: insertError } = await supabase.from('pipeline_stages').insert(rows);
@@ -1011,8 +1061,8 @@ export const db = {
         const { data, error } = await supabase
           .from('raw_vacancies')
           .select('status')
-          .order('created_at', { ascending: false })
-          .limit(500);
+          .eq('source', 'tg')
+          .order('created_at', { ascending: false });
         if (error) throw error;
         const counts: Record<string, number> = { new: 0, processing: 0, done: 0, skipped: 0 };
         for (const row of data || []) counts[row.status] = (counts[row.status] ?? 0) + 1;

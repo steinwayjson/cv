@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Trash2 } from 'lucide-react';
 import { usePromptVersions } from '../../hooks/usePrompts';
 import { useVacancyAnalysisLog, useDeleteAnalysisLog } from '../../hooks/useAnalysisLog';
-import { useIsVacancyReanalyzing, useReanalyze } from '../../hooks/useReanalyze';
+import { useIsVacancyReanalyzing, useReanalyze, useReanalyzeLetter } from '../../hooks/useReanalyze';
 import { ScoreBadge } from '../ui/ScoreBadge';
 import type { AgentKey, AnalysisLog, PromptKey, Vacancy } from '../../lib/types';
 
@@ -56,11 +56,13 @@ function AgentHistoryRow({
   vacancy,
   selectedVersion,
   onSelectVersion,
+  extraAction,
 }: {
   config: AgentConfig;
   vacancy: Vacancy;
   selectedVersion?: number;
   onSelectVersion: (key: PromptKey, version: number) => void;
+  extraAction?: React.ReactNode;
 }) {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -194,6 +196,12 @@ function AgentHistoryRow({
           );
         })}
       </div>
+
+      {extraAction && (
+        <div className="mt-3">
+          {extraAction}
+        </div>
+      )}
     </div>
   );
 }
@@ -236,6 +244,8 @@ export function PromptVersionsTab({ vacancy }: PromptVersionsTabProps) {
     setSelectedVersions(prev => ({ ...prev, [key]: version }));
   };
 
+  const reanalyzeLetter = useReanalyzeLetter();
+
   const handleReanalyze = () => {
     reanalyze.mutate({
       vacancyIds: [vacancy.id],
@@ -243,7 +253,22 @@ export function PromptVersionsTab({ vacancy }: PromptVersionsTabProps) {
     });
   };
 
+  const handleReanalyzeCopywriter = () => {
+    const copywriterVersion = selectedVersions['copywriter'];
+    if (!copywriterVersion) return;
+    reanalyzeLetter.mutate({
+      vacancyIds: [vacancy.id],
+      promptVersions: { copywriter: copywriterVersion },
+    });
+  };
+
   const selectedCount = agents.filter(config => selectedVersions[config.promptKey] != null).length;
+
+  const copywriterConfig = agents.find(config => config.agent === 'copywriter')!;
+  const selectedCopywriterVersion = selectedVersions['copywriter'];
+  const showCopywriterReanalyze = selectedCopywriterVersion != null
+    && (copywriterConfig.currentVersion == null
+      || selectedCopywriterVersion !== copywriterConfig.currentVersion);
 
   return (
     <div className="space-y-3">
@@ -254,6 +279,16 @@ export function PromptVersionsTab({ vacancy }: PromptVersionsTabProps) {
           vacancy={vacancy}
           selectedVersion={selectedVersions[config.promptKey]}
           onSelectVersion={handleSelectVersion}
+          extraAction={config.agent === 'copywriter' && showCopywriterReanalyze ? (
+            <button
+              onClick={handleReanalyzeCopywriter}
+              disabled={reanalyzeLetter.isPending || isReanalyzing}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-60"
+            >
+              <RefreshCw size={14} className={reanalyzeLetter.isPending || isReanalyzing ? 'animate-spin' : ''} />
+              {isReanalyzing ? 'Reanalyzing...' : reanalyzeLetter.isPending ? 'Sending...' : 'Reanalyze with new version'}
+            </button>
+          ) : undefined}
         />
       ))}
       <div className="sticky bottom-0 pt-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">

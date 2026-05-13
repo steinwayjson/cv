@@ -3,7 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { PromptKey, Vacancy } from '../lib/types';
 
-const WEBHOOK = import.meta.env.VITE_N8N_SCORE_WEBHOOK as string | undefined;
+const VERSIONS_WEBHOOK = import.meta.env.VITE_N8N_REANALIZE_VERSIONS_WEBHOOK as string | undefined;
+const LETTER_WEBHOOK = import.meta.env.VITE_N8N_REANALIZE_LETTER_WEBHOOK as string | undefined;
 
 type PromptVersionSelection = Partial<Record<PromptKey, number>>;
 
@@ -13,6 +14,11 @@ type ReanalyzeRequest =
       vacancyIds: string[];
       promptVersions?: PromptVersionSelection;
     };
+
+type LetterReanalyzeRequest = {
+  vacancyIds: string[];
+  promptVersions: Partial<Record<PromptKey, number>>;
+};
 
 type PendingRun = {
   startedAt: number;
@@ -108,9 +114,9 @@ function startRefreshUntilUpdated(
   setTimeout(tick, 1000);
 }
 
-async function triggerScore(request: ReanalyzeRequest): Promise<void> {
-  if (!WEBHOOK) {
-    throw new Error('VITE_N8N_SCORE_WEBHOOK не настроен в .env');
+async function triggerVersionsReanalysis(request: ReanalyzeRequest): Promise<void> {
+  if (!VERSIONS_WEBHOOK) {
+    throw new Error('VITE_N8N_REANALIZE_VERSIONS_WEBHOOK не настроен в .env');
   }
 
   const body = Array.isArray(request)
@@ -120,7 +126,28 @@ async function triggerScore(request: ReanalyzeRequest): Promise<void> {
         prompt_versions: request.promptVersions,
       };
 
-  const res = await fetch(WEBHOOK, {
+  const res = await fetch(VERSIONS_WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`n8n вернул ${res.status}${body ? ': ' + body : ''}`);
+  }
+}
+
+async function triggerLetterReanalysis(request: LetterReanalyzeRequest): Promise<void> {
+  if (!LETTER_WEBHOOK) {
+    throw new Error('VITE_N8N_REANALIZE_LETTER_WEBHOOK не настроен в .env');
+  }
+
+  const body = {
+    vacancy_ids: request.vacancyIds,
+    prompt_versions: request.promptVersions,
+  };
+
+  const res = await fetch(LETTER_WEBHOOK, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -134,7 +161,7 @@ async function triggerScore(request: ReanalyzeRequest): Promise<void> {
 export function useReanalyze() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: triggerScore,
+    mutationFn: triggerVersionsReanalysis,
     onMutate: (request) => {
       markPending(getVacancyIds(request));
     },
@@ -150,6 +177,29 @@ export function useReanalyze() {
     onError: (e: Error, request) => {
       clearPending(getVacancyIds(request));
       toast.error(e.message || 'Ошибка при запросе анализа');
+    },
+  });
+}
+
+export function useReanalyzeLetter() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: triggerLetterReanalysis,
+    onMutate: (request) => {
+      markPending(request.vacancyIds);
+    },
+    onSuccess: (_data, request) => {
+      const ids = request.vacancyIds;
+      toast.success(
+        ids.length === 1
+          ? 'Запрос на генерацию письма отправлен.'
+          : `Отправлено ${ids.length} вакансий на генерацию письма.`,
+      );
+      startRefreshUntilUpdated(qc, ids);
+    },
+    onError: (e: Error, request) => {
+      clearPending(request.vacancyIds);
+      toast.error(e.message || 'Ошибка при запросе генерации письма');
     },
   });
 }

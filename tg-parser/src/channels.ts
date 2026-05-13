@@ -24,20 +24,32 @@ const supabase = createClient(
 );
 
 const DEFAULT_DEPTH_DAYS = 40;
-const PAGE_DELAY_MS = 800;
+const PAGE_DELAY_MS = 1500;
 
 async function fetchPage(username: string, before?: number): Promise<ParsedPost[]> {
   const url = before
     ? `https://t.me/s/${username}?before=${before}`
     : `https://t.me/s/${username}`;
 
+  console.log(`[fetchPage] GET ${url}`);
+
   const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; work-parser/1.0)' },
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
+    },
   });
 
   if (!res.ok) throw new Error(`t.me returned ${res.status} for @${username}`);
 
-  const root = parse(await res.text());
+  const html = await res.text();
+  console.log(`[fetchPage] received ${html.length} chars for @${username}`);
+
+  // Логируем первые 500 символов чтобы понять что пришло
+  console.log(`[fetchPage] HTML snippet: ${html.slice(0, 500)}`);
+
+  const root = parse(html);
   const posts: ParsedPost[] = [];
 
   for (const el of root.querySelectorAll('.tgme_widget_message')) {
@@ -45,7 +57,8 @@ async function fetchPage(username: string, before?: number): Promise<ParsedPost[
     const messageId = Number(dataPost.split('/')[1]);
     if (!messageId) continue;
 
-    const text = el.querySelector('.tgme_widget_message_text')?.innerText?.trim() ?? '';
+    const textEl = el.querySelector('.tgme_widget_message_text');
+    const text = textEl?.innerText?.trim() ?? '';
     if (!text) continue;
 
     const datetime = el.querySelector('time')?.getAttribute('datetime') ?? '';
@@ -56,6 +69,7 @@ async function fetchPage(username: string, before?: number): Promise<ParsedPost[
     posts.push({ channel_username: username, channel_title: '', message_id: messageId, text, date });
   }
 
+  console.log(`[fetchPage] @${username}: found ${posts.length} posts on this page`);
   return posts;
 }
 
@@ -72,7 +86,11 @@ async function getNewPosts(channel: TgChannel): Promise<ParsedPost[]> {
     const page = await fetchPage(channel.username, before);
     if (!page.length) break;
 
-    for (const post of page) {
+    // DEBUG: логируем ID которые нашли на странице и last_post_id из БД
+    console.log(`[debug] found ids: ${page.map(p => p.message_id).join(', ')}`);
+    console.log(`[debug] last_post_id in DB: ${channel.last_post_id} (type: ${typeof channel.last_post_id})`);
+
+    for (const post of page.toReversed()) {
       if (cutoff && post.date < cutoff) break outer;
       if (!isFirstRun && post.message_id <= minId) break outer;
       allPosts.push({ ...post, channel_title: channel.title });
@@ -108,27 +126,30 @@ async function savePostsToRawVacancies(channel: TgChannel, posts: ParsedPost[]):
   return data?.length ?? rows.length;
 }
 
-export async function parseAllChannels(): Promise<number> {
+export async function parseAllChannels(): Promise<{ posts_found: number; diagnostics: string[] }> {
   let totalPosts = 0;
+  const diagnostics: string[] = [];
   const { data: channels, error } = await supabase
     .from('tg_channels')
     .select('id, username, title, last_post_id, is_active, depth_days')
     .eq('is_active', true);
 
   if (error) throw new Error(`Supabase: ${error.message}`);
-  if (!channels?.length) { console.log('[parser] no active channels'); return 0; }
+  if (!channels?.length) { diagnostics.push('no active channels in DB'); console.log('[parser] no active channels'); return { posts_found: 0, diagnostics }; }
 
+  diagnostics.push(`${channels.length} channels found`);
   console.log(`[parser] ${channels.length} channels`);
 
   for (const channel of channels as TgChannel[]) {
     const startedAt = Date.now();
     try {
       const posts = await getNewPosts(channel);
-      if (!posts.length) { console.log(`[parser] @${channel.username}: no new posts`); continue; }
+      if (!posts.length) { diagnostics.push(`@${channel.username}: no new posts`); console.log(`[parser] @${channel.username}: no new posts`); continue; }
 
       posts.sort((a, b) => a.message_id - b.message_id);
       const saved = await savePostsToRawVacancies(channel, posts);
       totalPosts += saved;
+      diagnostics.push(`@${channel.username}: ${saved} posts saved`);
       console.log(`[parser] @${channel.username}: ${saved} posts saved (total: ${totalPosts})`);
 
       const maxId = Math.max(...posts.map((p) => p.message_id));
@@ -148,6 +169,7 @@ export async function parseAllChannels(): Promise<number> {
         error_message: null,
       });
     } catch (err) {
+      diagnostics.push(`@${channel.username}: ERROR ${String(err)}`);
       console.error(`[parser] @${channel.username}:`, err);
       await supabase.from('parser_runs').insert({
         channel_id: channel.id,
@@ -159,5 +181,7 @@ export async function parseAllChannels(): Promise<number> {
       });
     }
   }
-  return totalPosts;
+  return { posts_found: totalPosts, diagnostics };
 }
+
+

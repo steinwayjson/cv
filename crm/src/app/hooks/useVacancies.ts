@@ -10,6 +10,7 @@ export function useVacancies() {
     queryKey: ['vacancies'],
     queryFn: () => db.vacancies.getAll(),
     enabled: !!user,
+    refetchInterval: 15_000,
   });
 }
 

@@ -9,10 +9,8 @@ export interface FunnelStep {
 
 export function FunnelChart({
   steps,
-  rejected,
 }: {
   steps: FunnelStep[];
-  rejected?: number;
 }) {
   const first = steps[0]?.count || 1;
 
@@ -54,12 +52,6 @@ export function FunnelChart({
         );
       })}
 
-      {rejected !== undefined && rejected > 0 && (
-        <div className="mt-4 flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-full text-sm text-red-600 dark:text-red-400">
-          <span>↵</span>
-          <span>Отказы: <strong>{rejected}</strong></span>
-        </div>
-      )}
     </div>
   );
 }

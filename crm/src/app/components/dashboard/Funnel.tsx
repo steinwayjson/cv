@@ -23,13 +23,14 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
     [vacancies, source]
   );
 
-  // Собираем counts для каждого этапа: итерируем по отсортированным этапам
+  // Сортируем опции по order_index
   const sortedOptions = useMemo(
-    () => [...statusOptions].sort((a, b) => {
-      const idxA = orderIndexForStatus(a.value) ?? Infinity;
-      const idxB = orderIndexForStatus(b.value) ?? Infinity;
-      return idxA - idxB;
-    }),
+    () => [...statusOptions]
+      .sort((a, b) => {
+        const idxA = orderIndexForStatus(a.value) ?? Infinity;
+        const idxB = orderIndexForStatus(b.value) ?? Infinity;
+        return idxA - idxB;
+      }),
     [statusOptions]
   );
 
@@ -44,32 +45,16 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
 
     for (const v of pool) {
       if (v.status === 'closed') {
-        // Для closed: засчитываем все этапы до last_stage
-        const cutoffIdx = orderIndexForStatus(v.last_stage ?? 'new');
-        for (const key of optionKeys) {
-          const keyIdx = orderIndexForStatus(key);
-          if (keyIdx !== null && cutoffIdx !== null && keyIdx <= cutoffIdx) {
-            c[key] = (c[key] ?? 0) + 1;
-          }
-        }
-      } else if (v.status === 'rejected') {
-        // rejected не показываем в активной воронке
-        continue;
+        // closed считаем в том этапе, где был last_stage
+        c[v.last_stage ?? 'new'] = (c[v.last_stage ?? 'new'] ?? 0) + 1;
       } else {
-        // Для нормальных статусов: засчитываем все этапы от начала до текущего
-        const currentIdx = orderIndexForStatus(v.status);
-        for (const key of optionKeys) {
-          const keyIdx = orderIndexForStatus(key);
-          if (keyIdx !== null && currentIdx !== null && keyIdx <= currentIdx) {
-            c[key] = (c[key] ?? 0) + 1;
-          }
-        }
+        // Считаем только точное совпадение по статусу
+        c[v.status] = (c[v.status] ?? 0) + 1;
       }
     }
     return c;
   }, [pool, sortedOptions]);
 
-  const closedCount = useMemo(() => pool.filter(v => v.status === 'closed').length, [pool]);
   const title = source ? `Воронка · ${source}` : 'Воронка';
 
   return (
@@ -110,20 +95,6 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
             </div>
           );
         })}
-
-        {closedCount > 0 && (
-          <div className="flex items-start ml-2">
-            <div className="flex flex-col items-center mt-2 mx-1 w-8 flex-shrink-0">
-              <ChevronRight size={14} className="text-red-300 dark:text-red-700" />
-            </div>
-            <div className="flex flex-col items-center min-w-[52px]">
-              <span className="text-2xl font-bold leading-none text-red-500">{closedCount}</span>
-              <span className="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-1 leading-tight">
-                Закрыто
-              </span>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

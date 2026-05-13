@@ -26,7 +26,7 @@ export interface N8nConfirmPayload {
 
 export interface N8nStatusPayload {
   vacancy_id: string;
-  status: 'replied' | 'interview' | 'rejected' | 'offer';
+  status: 'replied' | 'interview' | 'offer';
 }
 
 export interface N8nFollowUpPayload {

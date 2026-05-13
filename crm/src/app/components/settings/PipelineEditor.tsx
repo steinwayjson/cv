@@ -16,18 +16,19 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X } from 'lucide-react';
+import { GripVertical, Lock, X } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import {
   useAddPipelineStage,
   useCreatePipelineSource,
   useDeletePipelineSource,
   useDeletePipelineStage,
+  usePipeline,
   usePipelineStrict,
   useRenamePipelineStage,
-  useSeedPipelinePreset,
   useUpdatePipeline,
 } from '../../hooks/usePipeline';
+
 import { FIXED_SOURCES, canonicalSource } from '../../lib/sources';
 import { toast } from 'sonner';
 import type { PipelineStage } from '../../lib/types';
@@ -37,10 +38,12 @@ const EMPTY_STAGES: PipelineStage[] = [];
 
 function SortableStage({
   stage,
+  isBase,
   onDelete,
   onRename,
 }: {
   stage: PipelineStage;
+  isBase: boolean;
   onDelete: (id: string) => void;
   onRename: (id: string, name: string) => void;
 }) {
@@ -61,13 +64,15 @@ function SortableStage({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"
+      className={`flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded ${
+        isBase ? 'opacity-90' : ''
+      }`}
     >
-      <div {...attributes} {...listeners} className="cursor-grab touch-none">
+      <div {...attributes} {...listeners} className={`cursor-grab touch-none ${isBase ? 'cursor-not-allowed opacity-40' : ''}`}>
         <GripVertical size={18} className="text-gray-400" />
       </div>
       <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color }} />
-      {editing ? (
+      {editing && !isBase ? (
         <input
           autoFocus
           value={name}
@@ -85,36 +90,61 @@ function SortableStage({
       ) : (
         <button
           type="button"
-          onClick={() => setEditing(true)}
-          className="flex-1 text-left"
-          title="Переименовать этап"
+          onClick={() => !isBase && setEditing(true)}
+          className={`flex-1 text-left ${isBase ? 'cursor-default' : ''}`}
+          title={isBase ? 'Базовый этап — переименуйте на вкладке «По умолчанию»' : 'Переименовать этап'}
         >
-          {stage.name}
+          <span className="flex items-center gap-1.5">
+            {stage.name}
+            {isBase && <Lock size={12} className="text-gray-400 flex-shrink-0" />}
+          </span>
         </button>
       )}
-      <button
-        type="button"
-        onClick={() => onDelete(stage.id)}
-        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-        title="Удалить этап"
-      >
-        <X size={16} className="text-gray-400 hover:text-red-500" />
-      </button>
+      {!isBase && (
+        <button
+          type="button"
+          onClick={() => onDelete(stage.id)}
+          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+          title="Удалить этап"
+        >
+          <X size={16} className="text-gray-400 hover:text-red-500" />
+        </button>
+      )}
     </div>
   );
 }
 
 export function PipelineEditor() {
-  // Табы: все фиксированные источники (HeadHunter, LinkedIn, SuperJob, Telegram, Zarplata, Habr Career)
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
-  const { data } = usePipelineStrict(selectedSource);
-  const stages = data ?? EMPTY_STAGES;
+  const isSelectedTabDefault = selectedSource === null;
+
+  // Загружаем дефолтные этапы (всегда) и source-specific этапы (если не дефолт)
+  const { data: defaultStages = [] } = usePipeline();
+  const { data: strictStages = [] } = usePipelineStrict(selectedSource);
+
+
+  // Мержим: на вкладке источника интерливим базовые этапы с source-specific
+  // source-specific с base_key переопределяют базовые; без base_key — кастомные
+  const mergedStages = useMemo<PipelineStage[]>(() => {
+    if (isSelectedTabDefault) return strictStages;
+    // Source tab: дефолтные этапы + переопределения по base_key + кастомные (без base_key)
+    const sourceByBaseKey = new Map<string, PipelineStage>(
+      strictStages.filter(s => s.base_key).map(s => [s.base_key!, s])
+    );
+    const sourceCustom = strictStages.filter(s => !s.base_key);
+    const merged = defaultStages.map(b => {
+      const override = sourceByBaseKey.get(b.base_key!);
+      return override || b;
+    });
+    merged.push(...sourceCustom);
+    merged.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+    return merged;
+  }, [isSelectedTabDefault, defaultStages, strictStages]);
 
   const updatePipeline = useUpdatePipeline();
   const addStage = useAddPipelineStage();
   const deleteStage = useDeletePipelineStage();
   const renameStage = useRenamePipelineStage();
-  const seedPreset = useSeedPipelinePreset();
   const createSource = useCreatePipelineSource();
   const deleteSource = useDeletePipelineSource();
 
@@ -126,12 +156,11 @@ export function PipelineEditor() {
   const [pendingStageDeleteId, setPendingStageDeleteId] = useState<string | null>(null);
   const [pendingSourceDelete, setPendingSourceDelete] = useState<string | null>(null);
 
-  // Все табы — фиксированные источники (всегда видны, не зависят от БД)
   const allTabSources = useMemo(() => [...FIXED_SOURCES], []);
 
-  useEffect(() => setItems(stages), [stages]);
+  useEffect(() => setItems(mergedStages), [mergedStages]);
 
-  // При смене таба на источник не из списка — сбрасываем на дефолт
+
   useEffect(() => {
     if (selectedSource) {
       const canonical = canonicalSource(selectedSource);
@@ -145,6 +174,12 @@ export function PipelineEditor() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  // Определяем, какие этапы базовые
+  const baseKeys = ['new', 'sent', 'replied', 'sobes', 'meeting', 'closed'];
+
+  const isBaseStage = (stage: PipelineStage) =>
+    isSelectedTabDefault ? stage.is_base === true : baseKeys.includes(stage.base_key ?? '');
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -156,7 +191,12 @@ export function PipelineEditor() {
         ...item,
         order_index: idx + 1,
       }));
-      updatePipeline.mutate(reordered, {
+      // На вкладке источника сохраняем только source-specific этапы,
+      // чтобы не перезаписать дефолтные
+      const toSave = isSelectedTabDefault
+        ? reordered
+        : reordered.filter(s => s.source);
+      updatePipeline.mutate(toSave, {
         onSuccess: () => toast.success('Порядок сохранён'),
         onError: () => toast.error('Не удалось сохранить порядок'),
       });
@@ -200,6 +240,13 @@ export function PipelineEditor() {
 
   const confirmStageDelete = () => {
     if (!pendingStageDeleteId) return;
+    // Проверяем, не пытаемся ли удалить базовый этап
+    const stage = items.find(s => s.id === pendingStageDeleteId);
+    if (stage && isBaseStage(stage)) {
+      setPendingStageDeleteId(null);
+      toast.error('Нельзя удалить базовый этап воронки');
+      return;
+    }
     deleteStage.mutate(pendingStageDeleteId, {
       onSuccess: () => {
         setPendingStageDeleteId(null);
@@ -228,7 +275,6 @@ export function PipelineEditor() {
     });
   };
 
-  // Проверка: можно ли удалить таб источника
   const canDeleteTab = (source: string) => {
     const canonical = canonicalSource(source);
     return !(FIXED_SOURCES as readonly string[]).includes(canonical);
@@ -237,7 +283,7 @@ export function PipelineEditor() {
   return (
     <div className="space-y-4">
       {/* ── Табы источников ── */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex items-start gap-4 flex-wrap">
         <div className="flex gap-1 flex-wrap border-b border-gray-200 dark:border-gray-700 pb-3 flex-1">
           {/* Дефолтная воронка */}
           <button
@@ -271,7 +317,6 @@ export function PipelineEditor() {
                 >
                   {source}
                 </button>
-                {/* Кнопка удаления — только для не-фиксированных источников */}
                 {canDeleteTab(source) && (
                   <button
                     type="button"
@@ -288,43 +333,6 @@ export function PipelineEditor() {
             );
           })}
         </div>
-
-        {/* Кнопка «Создать базовые этапы» */}
-        <button
-          type="button"
-          onClick={() =>
-            seedPreset.mutate(undefined, {
-              onSuccess: () => toast.success('Базовые этапы созданы'),
-              onError: (error: Error) => toast.error(error.message || 'Не удалось создать этапы'),
-            })
-          }
-          disabled={seedPreset.isPending}
-          className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 whitespace-nowrap"
-        >
-          {seedPreset.isPending ? 'Создание...' : 'Создать базовые этапы'}
-        </button>
-      </div>
-
-      {/* ── Добавить свой источник ── */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={newSource}
-          onChange={event => setNewSource(event.target.value)}
-          onKeyDown={event => {
-            if (event.key === 'Enter') handleAddSource();
-          }}
-          placeholder="Новый источник... (например: МойКанал)"
-          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-sm"
-        />
-        <button
-          type="button"
-          onClick={handleAddSource}
-          disabled={!newSource.trim() || createSource.isPending}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 text-sm"
-        >
-          Добавить
-        </button>
       </div>
 
       {/* ── Этапы воронки ── */}
@@ -333,7 +341,7 @@ export function PipelineEditor() {
           <p className="text-sm">
             {selectedSource
               ? `Для «${selectedSource}» этапы пока не созданы`
-              : 'Базовая воронка пока не настроена — нажмите «Создать базовые этапы»'}
+              : 'Базовая воронка пока не настроена'}
           </p>
         </div>
       )}
@@ -345,6 +353,7 @@ export function PipelineEditor() {
               <SortableStage
                 key={stage.id}
                 stage={stage}
+                isBase={isBaseStage(stage)}
                 onDelete={setPendingStageDeleteId}
                 onRename={(id, name) =>
                   renameStage.mutate(

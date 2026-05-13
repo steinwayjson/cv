@@ -33,7 +33,7 @@ export function VacancyTable({
     updateStatus.mutate({
       id: vacancy.id,
       status,
-      lastStage: (status === 'rejected' || status === 'closed') ? vacancy.status : undefined,
+      lastStage: status === 'closed' ? vacancy.status : undefined,
     });
   };
 

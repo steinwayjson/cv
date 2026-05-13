@@ -15,10 +15,16 @@ interface YCResponse {
   body: string;
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'https://work.andrey-mikhaylichenko.ru',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, x-internal-secret',
+};
+
 function json(statusCode: number, data: unknown): YCResponse {
   return {
     statusCode,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   };
 }
@@ -65,6 +71,15 @@ async function logParserRun(
 
 // YC Functions handler: timer (cron) или ручной POST /run
 export const handler = async (event?: YCEvent): Promise<YCResponse> => {
+  // CORS preflight
+  if (event?.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: '',
+    };
+  }
+
   const startedAt = Date.now();
   const path = event?.path ?? '/';
   const method = event?.httpMethod?.toUpperCase?.() ?? 'TIMER';
@@ -79,14 +94,17 @@ export const handler = async (event?: YCEvent): Promise<YCResponse> => {
   }
 
   try {
-    const postsCount = await parseAllChannels();
+    const result = await parseAllChannels();
     const elapsed = Date.now() - startedAt;
-    await logParserRun(isManual ? 'manual' : 'scheduled', true, elapsed, postsCount);
-    return json(200, { ok: true, elapsed, manual: isManual });
+    await logParserRun(isManual ? 'manual' : 'scheduled', true, elapsed, result.posts_found);
+    console.log(`[handler] done: posts=${result.posts_found} elapsed=${elapsed}ms`);
+    return json(200, { ok: true, posts_found: result.posts_found, elapsed, manual: isManual, diagnostics: result.diagnostics });
+
   } catch (err) {
     const elapsed = Date.now() - startedAt;
     console.error('[parser] fatal error:', err);
     await logParserRun(isManual ? 'manual' : 'scheduled', false, elapsed, 0, String(err));
     return json(500, { ok: false, error: String(err) });
   }
+
 };

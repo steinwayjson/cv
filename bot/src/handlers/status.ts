@@ -2,12 +2,11 @@ import type { Telegraf } from 'telegraf';
 import { updateVacancyStatus } from '../services/supabase';
 import { errorMessage, escapeHtml } from '../utils/html';
 
-type StatusKey = 'replied' | 'interview' | 'rejected' | 'offer';
+type StatusKey = 'replied' | 'interview' | 'offer';
 
 const STATUSES: { command: StatusKey; label: string }[] = [
   { command: 'replied', label: 'Ответ получен ✉️' },
   { command: 'interview', label: 'Собеседование назначено 🗓' },
-  { command: 'rejected', label: 'Отказ 🚫' },
   { command: 'offer', label: 'Оффер! 🎉' },
 ];
 

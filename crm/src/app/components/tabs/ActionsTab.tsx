@@ -69,7 +69,7 @@ export function ActionsTab({ vacancy, onDelete }: ActionsTabProps) {
           onChange={(status) => updateStatus.mutate({
             id: vacancy.id,
             status,
-            lastStage: (status === 'rejected' || status === 'closed') ? vacancy.status : undefined,
+            lastStage: status === 'closed' ? vacancy.status : undefined,
           })}
           fullWidth
         />
