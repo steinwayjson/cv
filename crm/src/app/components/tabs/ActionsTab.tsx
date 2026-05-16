@@ -5,7 +5,7 @@ import { Modal } from '../ui/Modal';
 import { useUpdateVacancyStatus, useUpdateVacancyNotes, useUpdateClosedReason, useDeleteVacancy } from '../../hooks/useVacancies';
 import { useIsVacancyReanalyzing } from '../../hooks/useReanalyze';
 import { toast } from 'sonner';
-import type { Vacancy, VacancyStatus } from '../../lib/types';
+import type { Vacancy } from '../../lib/types';
 
 interface ActionsTabProps {
   vacancy: Vacancy;
@@ -63,13 +63,15 @@ export function ActionsTab({ vacancy, onDelete }: ActionsTabProps) {
       <div>
         <label className="block text-sm font-medium mb-2">Статус</label>
         <StatusDropdown
-          value={vacancy.status}
+          value={vacancy.current_stage_id}
+          currentStatus={vacancy.status}
           source={vacancy.source}
           disabled={isReanalyzing}
-          onChange={(status) => updateStatus.mutate({
+          onChange={(stageId, canonicalStatus) => updateStatus.mutate({
             id: vacancy.id,
-            status,
-            lastStage: status === 'closed' ? vacancy.status : undefined,
+            status: canonicalStatus,
+            lastStage: canonicalStatus === 'closed' ? vacancy.status : undefined,
+            stageId,
           })}
           fullWidth
         />

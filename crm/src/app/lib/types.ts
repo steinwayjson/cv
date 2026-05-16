@@ -1,21 +1,98 @@
-export type VacancyStatus = 'new' | 'sent' | 'replied' | 'sobes' | 'meeting' | 'closed' | `stage_${number}`;
+import type { Source } from './constants/sources';
+export type { Source };
 
+/** Бизнес-воронка вакансий (CRM) */
+export type VacancyStatus = 'new' | 'sent' | 'replied' | 'interview' | 'offer' | 'closed';
+
+export const VACANCY_STATUSES: readonly VacancyStatus[] = [
+  'new', 'sent', 'replied', 'interview', 'offer', 'closed',
+] as const;
+
+/** Группа статуса: active — в работе, terminal — завершён */
+export type StatusGroup = 'active' | 'terminal';
+
+export const STATUS_GROUP: Record<VacancyStatus, StatusGroup> = {
+  new:       'active',
+  sent:      'active',
+  replied:   'active',
+  interview: 'active',
+  offer:     'active',
+  closed:    'terminal',
+};
+
+export const ACTIVE_STATUSES: readonly VacancyStatus[] = VACANCY_STATUSES.filter(
+  s => STATUS_GROUP[s] === 'active'
+);
+export const TERMINAL_STATUSES: ReadonlySet<VacancyStatus> = new Set(
+  VACANCY_STATUSES.filter(s => STATUS_GROUP[s] === 'terminal')
+);
+
+/**
+ * Матрица допустимых переходов:
+ * - Forward: любой статус дальше по воронке (free forward)
+ * - Rollback: ровно на 1 шаг назад (constrained rollback)
+ * - Closed: терминальный, только reopen()
+ */
+export const STATUS_TRANSITIONS: Record<VacancyStatus, VacancyStatus[]> = {
+  new:       ['sent', 'replied', 'interview', 'offer', 'closed'],
+  sent:      ['replied', 'interview', 'offer', 'closed', 'new'],
+  replied:   ['interview', 'offer', 'closed', 'sent'],
+  interview: ['offer', 'closed', 'replied'],
+  offer:     ['closed', 'interview'],
+  closed:    [],  // только reopen()
+};
+
+/** Причины закрытия — сгруппированы по типу */
+export type ClosedReasonType = 'pipeline' | 'quality' | 'system';
+
+/** Причины закрытия вакансии */
 export const CLOSED_REASONS = [
-  'offer',
-  'rejected_by_me',
-  'rejected_by_company',
-  'ghosted',
-  'low_salary',
   'irrelevant',
-  'spam',
+  'no_response',
+  'salary',
+  'position_closed',
+  'rejected',
+  'ghosted',
   'duplicate',
-  'archived',
+  'spam',
+  'other',
 ] as const;
 
 export type ClosedReason = typeof CLOSED_REASONS[number];
 
+export const CLOSED_REASON_TYPE: Record<ClosedReason, ClosedReasonType> = {
+  irrelevant:       'quality',
+  no_response:      'pipeline',
+  salary:           'pipeline',
+  position_closed:  'pipeline',
+  rejected:         'pipeline',
+  ghosted:          'pipeline',
+  duplicate:        'system',
+  spam:             'quality',
+  other:            'system',
+};
+
+
+/** Маппинг старых/внешних статусов в canonical */
+export const STATUS_ALIASES: Record<string, VacancyStatus> = {
+  sobes: 'interview',
+  meeting: 'interview',
+  rejected: 'closed',
+  archive: 'closed',
+  done: 'new',
+};
+
+/**
+ * Технический пайплайн обработки вакансии.
+ * Отдельно от бизнес-воронки — этапы парсинга/обработки n8n.
+ */
+export type PipelineStatus = 'new' | 'processing' | 'done' | 'error' | 'skipped';
+
+export const PIPELINE_STATUSES: readonly PipelineStatus[] = [
+  'new', 'processing', 'done', 'error', 'skipped',
+] as const;
+
 export type Category = 'горячая' | 'норм' | 'мимо';
-export type Source = 'HH' | 'TG' | 'LinkedIn' | 'Сайт' | string;
 export type PromptKey = 'parser' | 'analyzer' | 'scoring' | 'copywriter' | 'profile' | (string & {});
 export type AgentKey = 'parser' | 'analyzer' | 'scoring' | 'copywriter' | (string & {});
 
@@ -43,8 +120,8 @@ export interface Vacancy {
   role: string;
   salary?: string;
   status: VacancyStatus;
-  last_stage?: VacancyStatus | null; // статус до rejected/closed
-  closed_reason?: ClosedReason | null; // причина закрытия (при status === 'closed')
+  last_stage?: VacancyStatus | null;   // предыдущий статус (для closed)
+  closed_reason?: ClosedReason | null;  // причина закрытия
   source: Source;
   notes?: string;
   next_action?: string;
@@ -63,6 +140,9 @@ export interface Vacancy {
   scored_at?: string | null;
   copywriter_prompt_version?: number | null;
   copywritten_at?: string | null;
+  pipeline_stage_id?: string | null;
+  /** ID текущего этапа воронки (pipeline_stages.id) — для визуального отображения */
+  current_stage_id?: string | null;
   score?: number;
   category?: Category;
   reason?: string;
@@ -70,7 +150,12 @@ export interface Vacancy {
   letter?: string;
   letter_edited?: string;
   model?: string;
+  // Business timestamps — даты перехода в ключевые статусы
+  sent_at?: string | null;
+  replied_at?: string | null;
+  closed_at?: string | null;
 }
+
 
 export interface PipelineStage {
   id: string;
@@ -81,6 +166,8 @@ export interface PipelineStage {
   is_active?: boolean;
   is_base?: boolean;
   base_key?: string | null;
+  /** Канонический статус, в который маппится этот stage (e.g. 'interview') */
+  canonical_status?: VacancyStatus | null;
 }
 
 export interface Profile {
@@ -135,8 +222,8 @@ export interface TgChannel {
   last_post_id: number | null;
   is_active: boolean;
   created_at: string;
-  depth_days: number;      // глубина сбора при первом запуске, дефолт 40
-  last_run_at: string | null; // когда последний раз запускался
+  depth_days: number;
+  last_run_at: string | null;
 }
 
 export interface ParserRun {
@@ -147,7 +234,7 @@ export interface ParserRun {
   elapsed_ms: number;
   posts_found: number;
   error_message: string | null;
-  channel_id: string | null; // uuid канала (нулл = запуск всех каналов)
+  channel_id: string | null;
 }
 
 export interface RawVacancy {
@@ -159,5 +246,5 @@ export interface RawVacancy {
   post_url: string | null;
   posted_at: string | null;
   created_at: string;
-  status: 'new' | 'processing' | 'done' | 'skipped';
+  status: PipelineStatus;
 }

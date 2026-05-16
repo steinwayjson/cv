@@ -3,11 +3,12 @@ import { ChevronRight } from 'lucide-react';
 import { useVacancies } from '../../hooks/useVacancies';
 import { usePipeline } from '../../hooks/usePipeline';
 import { canonicalSource } from '../../lib/sources';
+import type { PipelineStage } from '../../lib/types';
 import {
-  DEFAULT_STATUS_CONFIG,
   getStatusOptions,
   orderIndexForStatus,
 } from '../../lib/statuses';
+
 
 interface FunnelProps {
   source?: string;
@@ -23,16 +24,32 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
     [vacancies, source]
   );
 
-  // Сортируем опции по order_index
-  const sortedOptions = useMemo(
-    () => [...statusOptions]
-      .sort((a, b) => {
-        const idxA = orderIndexForStatus(a.value) ?? Infinity;
-        const idxB = orderIndexForStatus(b.value) ?? Infinity;
-        return idxA - idxB;
-      }),
-    [statusOptions]
-  );
+  // Сортируем опции по stages order_index (если stages доступны), иначе — canonical order
+  const sortedOptions = useMemo(() => {
+    const stageOrder = new Map<string, number>();
+    for (const stage of stages) {
+      if (stage.canonical_status && !stageOrder.has(stage.canonical_status)) {
+        stageOrder.set(stage.canonical_status, stage.order_index);
+      }
+    }
+
+    return [...statusOptions].sort((a, b) => {
+      const idxA = stageOrder.get(a.value) ?? orderIndexForStatus(a.value) ?? Infinity;
+      const idxB = stageOrder.get(b.value) ?? orderIndexForStatus(b.value) ?? Infinity;
+      return idxA - idxB;
+    });
+  }, [statusOptions, stages]);
+
+  // Мапа canonical_status → последний индекс среди отсортированных этапов.
+  // Если есть несколько этапов с одинаковым canonical (например, два 'replied'),
+  // используем последний — это корректная граница кумулятивного подсчёта.
+  const lastIdxForCanonical = useMemo(() => {
+    const map = new Map<string, number>();
+    sortedOptions.forEach((opt, idx) => {
+      map.set(opt.canonicalStatus, idx);
+    });
+    return map;
+  }, [sortedOptions]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -43,17 +60,21 @@ export const Funnel = memo(function Funnel({ source }: FunnelProps) {
       c[key] = 0;
     }
 
+    // Кумулятивный подсчёт: каждая вакансия учитывается во всех этапах
+    // от первого и до последнего этапа с её canonical_status включительно.
+    // Используем lastIdxForCanonical вместо indexOf, чтобы не терять
+    // вакансии, когда один canonical_status повторяется в нескольких этапах.
     for (const v of pool) {
-      if (v.status === 'closed') {
-        // closed считаем в том этапе, где был last_stage
-        c[v.last_stage ?? 'new'] = (c[v.last_stage ?? 'new'] ?? 0) + 1;
-      } else {
-        // Считаем только точное совпадение по статусу
-        c[v.status] = (c[v.status] ?? 0) + 1;
+      const maxIdx = lastIdxForCanonical.get(v.status);
+      if (maxIdx === undefined) continue;
+
+      for (let i = 0; i <= maxIdx; i++) {
+        const key = optionKeys[i];
+        c[key] = (c[key] ?? 0) + 1;
       }
     }
     return c;
-  }, [pool, sortedOptions]);
+  }, [pool, sortedOptions, lastIdxForCanonical]);
 
   const title = source ? `Воронка · ${source}` : 'Воронка';
 

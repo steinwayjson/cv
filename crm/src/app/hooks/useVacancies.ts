@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { db } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import type { Vacancy } from '../lib/types';
+import type { Vacancy, VacancyStatus, ClosedReason } from '../lib/types';
 
 export function useVacancies() {
   const { user } = useAuth();
@@ -27,8 +27,8 @@ export function useUpdateVacancyStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, status, lastStage }: { id: string; status: string; lastStage?: string }) =>
-      db.vacancies.updateStatus(id, status, lastStage),
+    mutationFn: ({ id, status, lastStage, stageId }: { id: string; status: string; lastStage?: string; stageId?: string }) =>
+      db.vacancies.updateStatus(id, status, lastStage, stageId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vacancies'] });
     },
@@ -88,5 +88,26 @@ export function useDeleteVacancy() {
       queryClient.invalidateQueries({ queryKey: ['vacancies'] });
     },
     onError: (e: Error) => toast.error(`Ошибка удаления: ${e.message}`),
+  });
+}
+
+export function useBulkUpdateStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: {
+      ids: string[];
+      status: VacancyStatus;
+      closedReason?: ClosedReason | null;
+    }) => db.vacancies.bulkUpdateStatus(params),
+    onSuccess: (_, { ids }) => {
+      queryClient.invalidateQueries({ queryKey: ['vacancies'] });
+      toast.success(
+        ids.length === 1
+          ? 'Статус обновлён'
+          : `Статус обновлён для ${ids.length} вакансий`,
+      );
+    },
+    onError: (e: Error) => toast.error(`Ошибка массового обновления: ${e.message}`),
   });
 }

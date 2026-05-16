@@ -84,7 +84,55 @@ export async function checkDuplicateVacancy(link: string): Promise<boolean> {
   return data !== null;
 }
 
+/** Terminal status — только closed */
+const TERMINAL_STATUSES = new Set(['closed']);
+
+/** Canonical статусы */
+const CANONICAL_STATUSES = ['new', 'sent', 'replied', 'interview', 'offer', 'closed'] as const;
+
+/**
+ * Проверяет и приводит статус к canonical.
+ * - sobes → interview, meeting → interview, rejected → closed, archive → closed, done → new
+ */
+function toCanonicalStatus(status: string): string | null {
+  if (CANONICAL_STATUSES.includes(status as any)) return status;
+  const ALIASES: Record<string, string> = {
+    sobes: 'interview',
+    meeting: 'interview',
+    rejected: 'closed',
+    archive: 'closed',
+    done: 'new',
+  };
+  return ALIASES[status] ?? null;
+}
+
 export async function updateVacancyStatus(vacancyId: string, status: string): Promise<void> {
-  const { error } = await supabase.from('vacancies').update({ status }).eq('id', vacancyId);
-  throwIfError('Vacancy status update', error);
+  const canonical = toCanonicalStatus(status);
+  if (!canonical) {
+    throw new Error(`Invalid status: "${status}". Must be one of: ${CANONICAL_STATUSES.join(', ')}`);
+  }
+
+  // При переходе в terminal state (closed) сохраняем предыдущий статус в last_stage
+  if (TERMINAL_STATUSES.has(canonical)) {
+    const { data: current, error: fetchError } = await supabase
+      .from('vacancies')
+      .select('status')
+      .eq('id', vacancyId)
+      .maybeSingle();
+    throwIfError('Vacancy fetch for last_stage', fetchError);
+
+    const lastStage = current && !TERMINAL_STATUSES.has(current.status) ? current.status : null;
+    const { error } = await supabase
+      .from('vacancies')
+      .update({ status: canonical, last_stage: lastStage, closed_reason: null })
+      .eq('id', vacancyId);
+    throwIfError('Vacancy status update', error);
+  } else {
+    // Выход из terminal state — сбрасываем last_stage и closed_reason
+    const { error } = await supabase
+      .from('vacancies')
+      .update({ status: canonical, last_stage: null, closed_reason: null })
+      .eq('id', vacancyId);
+    throwIfError('Vacancy status update', error);
+  }
 }

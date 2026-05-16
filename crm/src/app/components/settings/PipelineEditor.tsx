@@ -31,7 +31,9 @@ import {
 
 import { FIXED_SOURCES, canonicalSource } from '../../lib/sources';
 import { toast } from 'sonner';
-import type { PipelineStage } from '../../lib/types';
+import type { PipelineStage, VacancyStatus } from '../../lib/types';
+import { VACANCY_STATUSES } from '../../lib/types';
+import { DEFAULT_STATUS_CONFIG } from '../../lib/statuses';
 
 const PRESET_COLORS = ['#6B7280', '#3B82F6', '#F59E0B', '#10B981', '#8B5CF6', '#EF4444'];
 const EMPTY_STAGES: PipelineStage[] = [];
@@ -118,16 +120,11 @@ export function PipelineEditor() {
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const isSelectedTabDefault = selectedSource === null;
 
-  // Загружаем дефолтные этапы (всегда) и source-specific этапы (если не дефолт)
   const { data: defaultStages = [] } = usePipeline();
   const { data: strictStages = [] } = usePipelineStrict(selectedSource);
 
-
-  // Мержим: на вкладке источника интерливим базовые этапы с source-specific
-  // source-specific с base_key переопределяют базовые; без base_key — кастомные
   const mergedStages = useMemo<PipelineStage[]>(() => {
     if (isSelectedTabDefault) return strictStages;
-    // Source tab: дефолтные этапы + переопределения по base_key + кастомные (без base_key)
     const sourceByBaseKey = new Map<string, PipelineStage>(
       strictStages.filter(s => s.base_key).map(s => [s.base_key!, s])
     );
@@ -152,6 +149,7 @@ export function PipelineEditor() {
   const [addingStage, setAddingStage] = useState(false);
   const [newStageName, setNewStageName] = useState('');
   const [newStageColor, setNewStageColor] = useState(PRESET_COLORS[0]);
+  const [newStageCanonicalStatus, setNewStageCanonicalStatus] = useState<string>('');
   const [newSource, setNewSource] = useState('');
   const [pendingStageDeleteId, setPendingStageDeleteId] = useState<string | null>(null);
   const [pendingSourceDelete, setPendingSourceDelete] = useState<string | null>(null);
@@ -159,7 +157,6 @@ export function PipelineEditor() {
   const allTabSources = useMemo(() => [...FIXED_SOURCES], []);
 
   useEffect(() => setItems(mergedStages), [mergedStages]);
-
 
   useEffect(() => {
     if (selectedSource) {
@@ -174,8 +171,8 @@ export function PipelineEditor() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Определяем, какие этапы базовые
-  const baseKeys = ['new', 'sent', 'replied', 'sobes', 'meeting', 'closed'];
+  // 6 базовых ключей — new, sent, replied, interview, offer, closed
+  const baseKeys = ['new', 'sent', 'replied', 'interview', 'offer', 'closed'];
 
   const isBaseStage = (stage: PipelineStage) =>
     isSelectedTabDefault ? stage.is_base === true : baseKeys.includes(stage.base_key ?? '');
@@ -191,8 +188,6 @@ export function PipelineEditor() {
         ...item,
         order_index: idx + 1,
       }));
-      // На вкладке источника сохраняем только source-specific этапы,
-      // чтобы не перезаписать дефолтные
       const toSave = isSelectedTabDefault
         ? reordered
         : reordered.filter(s => s.source);
@@ -220,16 +215,19 @@ export function PipelineEditor() {
   const handleAddStage = () => {
     const name = newStageName.trim();
     if (!name) return;
+    const canonicalStatus = (newStageCanonicalStatus || undefined) as VacancyStatus | undefined;
     addStage.mutate(
       {
         name,
         color: newStageColor,
         orderIndex: items.length + 1,
         source: selectedSource ?? undefined,
+        canonicalStatus,
       },
       {
         onSuccess: () => {
           setNewStageName('');
+          setNewStageCanonicalStatus('');
           setAddingStage(false);
           toast.success('Этап добавлен');
         },
@@ -240,7 +238,6 @@ export function PipelineEditor() {
 
   const confirmStageDelete = () => {
     if (!pendingStageDeleteId) return;
-    // Проверяем, не пытаемся ли удалить базовый этап
     const stage = items.find(s => s.id === pendingStageDeleteId);
     if (stage && isBaseStage(stage)) {
       setPendingStageDeleteId(null);
@@ -282,10 +279,8 @@ export function PipelineEditor() {
 
   return (
     <div className="space-y-4">
-      {/* ── Табы источников ── */}
       <div className="flex items-start gap-4 flex-wrap">
         <div className="flex gap-1 flex-wrap border-b border-gray-200 dark:border-gray-700 pb-3 flex-1">
-          {/* Дефолтная воронка */}
           <button
             type="button"
             onClick={() => setSelectedSource(null)}
@@ -298,7 +293,6 @@ export function PipelineEditor() {
             По умолчанию
           </button>
 
-          {/* Фиксированные источники */}
           {allTabSources.map(source => {
             const active = selectedSource?.toLowerCase() === source.toLowerCase();
             return (
@@ -335,7 +329,6 @@ export function PipelineEditor() {
         </div>
       </div>
 
-      {/* ── Этапы воронки ── */}
       {items.length === 0 && (
         <div className="text-center py-7 text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded">
           <p className="text-sm">
@@ -370,73 +363,73 @@ export function PipelineEditor() {
         </SortableContext>
       </DndContext>
 
-      {/* ── Добавить этап ── */}
       {addingStage ? (
-        <div className="flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded">
-          <div className="flex gap-1">
-            {PRESET_COLORS.map(color => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => setNewStageColor(color)}
-                className={`w-5 h-5 rounded-full border-2 transition-all ${
-                  newStageColor === color ? 'border-gray-800 dark:border-white scale-110' : 'border-transparent'
-                }`}
-                style={{ backgroundColor: color }}
-                title={color}
-              />
-            ))}
+        <div className="flex flex-col gap-2 p-3 border border-gray-300 dark:border-gray-600 rounded">
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1">
+              {PRESET_COLORS.map(color => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setNewStageColor(color)}
+                  className={`w-5 h-5 rounded-full border-2 transition-all ${
+                    newStageColor === color ? 'border-gray-800 dark:border-white scale-110' : 'border-transparent'
+                  }`}
+                  style={{ backgroundColor: color }}
+                  title={color}
+                />
+              ))}
+            </div>
+            <input
+              autoFocus
+              value={newStageName}
+              onChange={event => setNewStageName(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter') handleAddStage();
+                if (event.key === 'Escape') setAddingStage(false);
+              }}
+              placeholder="Название этапа"
+              className="flex-1 bg-transparent border-b border-gray-300 dark:border-gray-600 outline-none text-sm"
+            />
+            <select
+              value={newStageCanonicalStatus}
+              onChange={e => setNewStageCanonicalStatus(e.target.value)}
+              className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm"
+            >
+              <option value="">Без статуса</option>
+              {VACANCY_STATUSES.map(status => {
+                const cfg = DEFAULT_STATUS_CONFIG[status];
+                return (
+                  <option key={status} value={status} style={{ color: cfg?.color }}>
+                    {cfg?.label ?? status}
+                  </option>
+                );
+              })}
+            </select>
           </div>
-          <input
-            autoFocus
-            value={newStageName}
-            onChange={event => setNewStageName(event.target.value)}
-            onKeyDown={event => {
-              if (event.key === 'Enter') handleAddStage();
-              if (event.key === 'Escape') setAddingStage(false);
-            }}
-            placeholder="Название этапа"
-            className="flex-1 bg-transparent border-b border-gray-300 dark:border-gray-600 outline-none text-sm"
-          />
-          <button
-            type="button"
-            onClick={handleAddStage}
-            disabled={!newStageName.trim() || addStage.isPending}
-            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            Добавить
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setAddingStage(false);
-              setNewStageName('');
-            }}
-            className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
-          >
-            Отмена
-          </button>
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                setAddingStage(false);
+                setNewStageName('');
+                setNewStageCanonicalStatus('');
+              }}
+              className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              onClick={handleAddStage}
+              disabled={!newStageName.trim() || addStage.isPending}
+              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              Добавить
+            </button>
+          </div>
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAddingStage(true)}
-          className="w-full py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-500"
-        >
-          + Добавить этап
-        </button>
-      )}
-
-      <Modal
-        isOpen={!!pendingStageDeleteId}
-        onClose={() => setPendingStageDeleteId(null)}
-        title="Удалить этап?"
-        onConfirm={confirmStageDelete}
-        confirmText="Удалить"
-        cancelText="Отмена"
-      >
-        <p>Вакансии не удалятся. Удалится только настройка этапа воронки.</p>
-      </Modal>
+      ) : null}
 
       <Modal
         isOpen={!!pendingSourceDelete}

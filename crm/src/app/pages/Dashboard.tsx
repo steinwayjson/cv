@@ -1,17 +1,20 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { RefreshCw, X } from 'lucide-react';
-import { useVacancies } from '../hooks/useVacancies';
+import { RefreshCw, X, Check } from 'lucide-react';
+import { useVacancies, useBulkUpdateStatus } from '../hooks/useVacancies';
 import { useReanalyze } from '../hooks/useReanalyze';
 import { MetricsBar } from '../components/dashboard/MetricsBar';
 import { Funnel } from '../components/dashboard/Funnel';
+import { ClosedReasonsStats } from '../components/dashboard/ClosedReasonsStats';
 import { Filters } from '../components/dashboard/Filters';
 import { VacancyTable } from '../components/dashboard/VacancyTable';
 import { VacancyCard } from '../components/dashboard/VacancyCard';
 import { SidePanel } from '../components/dashboard/SidePanel';
+import { StatusDropdown } from '../components/ui/StatusDropdown';
+import { ClosedReasonDropdown } from '../components/ui/ClosedReasonDropdown';
 import { TableSkeleton } from '../components/ui/Skeleton';
 import { canonicalSource } from '../lib/sources';
-import type { Vacancy } from '../lib/types';
+import type { Vacancy, VacancyStatus, ClosedReason } from '../lib/types';
 import type { FilterValues } from '../components/dashboard/Filters';
 
 export function Dashboard() {
@@ -19,8 +22,11 @@ export function Dashboard() {
   const navigate = useNavigate();
   const { data: vacancies = [], isLoading, isError } = useVacancies();
   const reanalyze = useReanalyze();
+  const bulkUpdateStatus = useBulkUpdateStatus();
   const [selectedVacancy, setSelectedVacancy] = useState<Vacancy | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<VacancyStatus | ''>('');
+  const [bulkClosedReason, setBulkClosedReason] = useState<ClosedReason | null>(null);
   const [filters, setFilters] = useState<FilterValues>({
     category: '', status: '', source: '', period: '', search: '',
   });
@@ -90,29 +96,82 @@ export function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6">
       <MetricsBar />
-      <Funnel source={filters.source || undefined} />
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 min-w-0">
+          <Funnel source={filters.source || undefined} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <ClosedReasonsStats vacancies={filtered} />
+        </div>
+      </div>
       <Filters onFilterChange={setFilters} />
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="mb-3 flex items-center gap-3 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
-          <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-            Выбрано: {selectedIds.size}
-          </span>
-          <button
-            onClick={handleBulkReanalyze}
-            disabled={reanalyze.isPending}
-            className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-60"
-          >
-            <RefreshCw size={13} className={reanalyze.isPending ? 'animate-spin' : ''} />
-            Переанализировать
-          </button>
-          <button
-            onClick={() => setSelectedIds(new Set())}
-            className="ml-auto text-gray-400 hover:text-gray-600"
-          >
-            <X size={16} />
-          </button>
+        <div className="mb-3 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+              Выбрано: {selectedIds.size}
+            </span>
+            <button
+              onClick={handleBulkReanalyze}
+              disabled={reanalyze.isPending}
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-60"
+            >
+              <RefreshCw size={13} className={reanalyze.isPending ? 'animate-spin' : ''} />
+              Переанализировать
+            </button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="ml-auto text-gray-400 hover:text-gray-600"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Статус:</span>
+            <StatusDropdown
+              value=""
+              currentStatus={(bulkStatus as VacancyStatus) || 'new'}
+              onChange={(_, canonicalStatus) => {
+                setBulkStatus(canonicalStatus);
+                if (canonicalStatus !== 'closed') setBulkClosedReason(null);
+              }}
+              allowEmpty
+              disabled={bulkUpdateStatus.isPending}
+            />
+            {bulkStatus === 'closed' && (
+              <ClosedReasonDropdown
+                value={bulkClosedReason}
+                onChange={(reason) => setBulkClosedReason(reason)}
+                disabled={bulkUpdateStatus.isPending}
+              />
+            )}
+            <button
+              onClick={() => {
+                if (!bulkStatus) return;
+                bulkUpdateStatus.mutate(
+                  {
+                    ids: Array.from(selectedIds),
+                    status: bulkStatus as VacancyStatus,
+                    closedReason: bulkStatus === 'closed' ? bulkClosedReason : undefined,
+                  },
+                  {
+                    onSuccess: () => {
+                      setSelectedIds(new Set());
+                      setBulkStatus('');
+                      setBulkClosedReason(null);
+                    },
+                  }
+                );
+              }}
+              disabled={!bulkStatus || bulkUpdateStatus.isPending}
+              className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-60"
+            >
+              <Check size={13} />
+              Применить
+            </button>
+          </div>
         </div>
       )}
 

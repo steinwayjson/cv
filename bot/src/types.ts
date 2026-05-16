@@ -24,12 +24,27 @@ export interface N8nConfirmPayload {
   action: 'send' | 'edit';
 }
 
+/** Canonical статусы бизнес-воронки */
+export type CanonicalStatus = 'new' | 'sent' | 'replied' | 'interview' | 'offer' | 'closed';
+
+/** Технический пайплайн обработки (RawVacancy) */
+export type PipelineStatus = 'new' | 'processing' | 'done' | 'error' | 'skipped';
+
 export interface N8nStatusPayload {
   vacancy_id: string;
-  status: 'replied' | 'interview' | 'offer';
+  status: CanonicalStatus;
 }
 
 export interface N8nFollowUpPayload {
   vacancy_id: string;
   action: 'send_followup' | 'skip';
 }
+
+/** Маппинг старых/алиасных статусов в canonical */
+export const STATUS_ALIASES: Record<string, CanonicalStatus> = {
+  sobes: 'interview',
+  meeting: 'interview',
+  rejected: 'closed',
+  archive: 'closed',
+  done: 'new',
+};

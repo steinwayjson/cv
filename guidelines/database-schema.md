@@ -1,595 +1,122 @@
-# Схема Базы Данных
-
-Последнее обновление: 2026-05-12
-
-
-Этот документ — основной источник правды по базе данных CRM в Supabase. Его нужно обновлять при каждой миграции схемы и при каждом изменении n8n workflow, если workflow читает или записывает поля в базе.
-
-## Устройство Системы
-
-Система переносит вакансии из Telegram/n8n в Supabase, оценивает их через LLM-агентов, генерирует письма для отклика и показывает результат в React CRM.
-
-Основной поток:
-
-1. Telegram-бот собирает входные данные по вакансии.
-2. Бот отправляет payload в n8n.
-3. n8n парсит вакансию, создаёт или обновляет `companies` и `vacancies`.
-4. n8n читает активные промпты из `prompts`.
-5. LLM-агенты анализируют, скорят и генерируют письма.
-6. n8n записывает текущее состояние в `vacancies` и каждый прогон в `analysis_log`.
-7. CRM читает Supabase и даёт управлять статусами, заметками, промптами и этапами воронки.
-
-## Таблицы
-
-### `companies`
-
-Справочник компаний/работодателей.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `created_at` | `timestamptz` | Время создания |
-| `name` | `text` | Название компании |
-| `site` | `text` | Сайт компании |
-| `branch` | `text` | Индустрия/ниша |
-| `size` | `text` | Размер компании |
-| `size_comment` | `text` | Как был определён размер |
-| `stage` | `text` | Стартап/рост/зрелая/корпорация и т.п. |
-| `context` | `text` | Дополнительный контекст о компании |
-| `resource` | `text` | Источник данных о компании |
-
-Связи:
-
-- `vacancies.company_id -> companies.id`
-- `contacts.company_id -> companies.id`
-
-### `vacancies`
-
-Главная сущность CRM. Хранит текущее нормализованное состояние вакансии и текущие результаты агентов.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `published_at` | `timestamptz` | Время публикации/импорта вакансии |
-| `sent_at` | `timestamptz` | Время отправки отклика |
-| `link` | `text` | Исходная ссылка на вакансию |
-| `role` | `text` | Название вакансии |
-| `about` | `text` | Краткое нормализованное описание роли |
-| `salary` | `text` | Нормализованная зарплата |
-| `salary_raw` | `text` | Зарплата как в исходнике |
-| `salary_comment` | `text` | Интерпретация зарплаты |
-| `format` | `text` | Удалёнка/офис/гибрид и т.п. |
-| `city` | `text` | Город/локация |
-| `experience` | `text` | Требуемый опыт |
-| `employment` | `text` | Тип занятости |
-| `hard_skills` | `jsonb` | Требуемые инструменты/навыки |
-| `soft_skills` | `jsonb` | Soft skills |
-| `relocation` | `text` | Требования по релокации |
-| `visa_support` | `text` | Информация о визовой поддержке |
-| `status` | `text` | Текущий статус в CRM |
-| `last_stage` | `text` | Последний этап воронки перед отказом |
-| `source` | `text` | Источник, например `hh`, `tg`, `outreach` |
-| `source_type` | `text` | Тип источника, например `inbound` |
-| `utm` | `text` | UTM-метки |
-| `priority` | `text` | Приоритет/категория |
-| `notes` | `text` | Заметки пользователя |
-| `next_action` | `text` | Следующее действие |
-| `next_action_at` | `timestamptz` | Дата следующего действия |
-| `company_id` | `uuid` | FK на `companies` |
-| `parser_prompt_version` | `int` | Версия промпта парсера, использованная для текущих структурированных полей вакансии |
-| `parsed_at` | `timestamptz` | Время последнего парсинга вакансии |
-| `analyzer_prompt_version` | `int` | Версия промпта аналитика, использованная для текущих полей вакансии |
-| `analyzed_at` | `timestamptz` | Время последнего прогона аналитика |
-| `score` | `numeric` | Текущая оценка скоринга, которую показывает CRM |
-| `category` | `text` | Текущая категория скоринга |
-| `reason` | `text` | Текущее объяснение скоринга |
-| `scoring_prompt_version` | `int` | Версия промпта скоринга, использованная для текущей оценки |
-| `scored_at` | `timestamptz` | Время последнего скоринга |
-| `copywriter_prompt_version` | `int` | Версия промпта копирайтера, использованная для текущего письма |
-| `copywritten_at` | `timestamptz` | Время последней генерации письма |
-
-CRM читает текущие `score`, `category`, `reason` из `vacancies`. `analysis_log` хранит все версии прогонов scoring/analyzer/copywriter. `vacancy_analysis` остаётся для текущих длинных артефактов, например письма и ручной правки.
-
-### `vacancy_analysis`
-
-Legacy/current денормализованная таблица результатов агентов, которую сейчас использует CRM.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `created_at` | `timestamptz` | Время создания |
-| `vacancy_id` | `uuid` | Ссылка на `vacancies` |
-| `score` | numeric/int | Текущая оценка |
-| `category` | `text` | Категория hot/normal/skip |
-| `reason` | `text` | Объяснение скоринга |
-| `letter` | `text` | Сгенерированное письмо |
-| `letter_edited` | `text` | Письмо после ручной правки |
-| `model` | `text` | Использованная модель |
-| `site_content` | `text` | Полученный контент сайта компании |
-| `feedback` | `text` | Обратная связь пользователя/системы |
-| `version` | numeric/int | Legacy-маркер версии |
-
-Статус: оставить для совместимости и текущих длинных артефактов. `score`, `category`, `reason` в этой таблице legacy; источник правды для текущего скоринга теперь `vacancies`. Версии писем и скоринга хранятся в `analysis_log`.
-
-### `prompts`
-
-Версионируемое хранилище промптов.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `key` | `text` | Ключ промпта: `parser`, `analyzer`, `scoring`, `copywriter`, `profile` |
-| `version` | `int` | Номер версии внутри `key` |
-| `name` | `text` | Человекочитаемое название |
-| `content` | `text` | Тело промпта |
-| `description` | `text` | Changelog/описание версии |
-| `is_active` | `boolean` | Флаг текущей активной версии |
-| `created_at` | `timestamptz` | Время создания версии |
-| `updated_at` | `timestamptz` | Время последнего обновления |
-
-Правила:
-
-- Ровно одна активная строка на каждый `key`.
-- Нельзя перезаписывать старую историю промптов при смысловых изменениях.
-- Новое смысловое изменение = новая строка с `version = max(version) + 1`, старая строка получает `is_active = false`.
-- Мелкие исправления опечаток можно вносить в текущую активную строку, если они не меняют поведение.
-
-Вспомогательная функция:
-
-- `create_prompt_version(p_key, p_name, p_content, p_description)` создаёт следующую активную версию и деактивирует предыдущую.
-- `activate_prompt_version(p_key, p_version)` переключает активную версию без создания новой строки.
-
-### `analysis_log`
-
-Почти неизменяемый лог каждого прогона LLM-агента.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `created_at` | `timestamptz` | Время прогона |
-| `vacancy_id` | `uuid` | Связанная вакансия, может быть `null` |
-| `agent` | `text` | `analyzer`, `scoring`, `copywriter` |
-| `prompt_key` | `text` | Использованный ключ промпта |
-| `prompt_version` | `int` | Использованная версия промпта |
-| `input` | `jsonb` | Входные данные, отправленные агенту |
-| `raw_output` | `text` | Сырой ответ LLM |
-| `parsed_output` | `jsonb` | Распарсенный результат |
-| `model` | `text` | Название модели |
-| `error` | `text` | Текст ошибки, если прогон завершился неудачно |
-
-Правила:
-
-- Вставлять строку для каждого прогона, успешного или неуспешного.
-- Не использовать эту таблицу как основное живое состояние CRM.
-- Использовать для аудита, сравнения, повторной обработки и отката.
-
-### `pipeline_stages`
-
-Настраиваемые этапы воронки. Система использует двухуровневую модель: **базовые этапы** (воронка по умолчанию) и **кастомные этапы** для каждого источника.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `name` | `text` | Название этапа |
-| `color` | `text` | HEX-цвет для UI |
-| `order_index` | `int4` | Порядок отображения |
-| `source` | `text` | `null` = воронка по умолчанию, иначе источник (нормализован в нижний регистр) |
-| `is_base` | `boolean` | `true` для базовых этапов (нельзя удалить, блокированы в source-воронках) |
-| `base_key` | `text` | Ключ базового этапа: `new`, `sent`, `replied`, `sobes`, `meeting`, `closed` |
-
-Правила:
-
-1. **Базовые этапы** (`is_base = true`, `source = null`):
-   - 6 фиксированных базовых этапов (воронка по умолчанию):
-     - `new` → «Новые»
-     - `sent` → «Отправлено»
-     - `replied` → «Ответ получен»
-     - `sobes` → «Собеседование»
-     - `meeting` → «Встреча»
-     - `closed` → «Закрыто»
-
-   - Редактировать (переименовывать) базовые этапы можно только на вкладке «По умолчанию».
-   - Удалить базовый этап нельзя.
-
-2. **Source-специфичные этапы** (`source IS NOT NULL`):
-   - Базовые этапы наследуются из дефолтной воронки и отображаются с замочком (блокированы).
-   - Пользователь может добавлять свои этапы между базовыми.
-   - Source-специфичный этап может иметь `base_key` — это указывает, за каким базовым этапом он следует (сопоставление по имени в миграции).
-
-3. Уникальность:
-   - Один `(source, base_key)` — для базовых этапов в воронке.
-   - Для кастомных этапов порядок управляется `order_index`.
-
-4. Значения `source` нормализуются в нижний регистр: `hh`, `tg`, `linkedin`, `site`, `outreach`.
-
-5. Индексы:
-   - `pipeline_stages_source_order_idx` — на `(source, order_index)`.
-
-
-### `sessions`
-
-Состояние wizard-сценария Telegram-бота.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `created_at` | `timestamptz` | Время создания |
-| `chat_id` | numeric/bigint | Telegram chat/user id |
-| `step` | `text` | Текущий шаг wizard |
-| `vacancy_link` | `text` | Введённая ссылка на вакансию |
-| `site` | `text` | Сайт компании |
-| `vacancy_text` | `text` | Исходный текст вакансии |
-| `company_text` | `text` | Исходный текст о компании |
-| `updated_at` | `timestamptz` | Время последнего обновления wizard |
-| `last_update_id` | numeric/int | Маркер дедупликации Telegram |
-
-Правила:
-
-- `chat_id` должен быть уникальным.
-- Старые сессии можно безопасно удалять после устаревания.
-
-### `agent_configs`
-
-Runtime-настройки агентов, которые не являются текстом промпта.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `name` | `text` | Ключ конфига, сейчас `scorer` |
-| `system_prompt` | `text` | Legacy/опциональный system prompt |
-| `params` | `jsonb` | Структурированные параметры, например минимальная зарплата |
-| `updated_at` | `timestamptz` | Время последнего обновления |
-
-### `contacts`
-
-Таблица контактов для outreach. Сейчас пустая, оставлена под будущий outreach.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `created_at` | `timestamptz` | Время создания |
-| `company_id` | `uuid` | FK на `companies` |
-| `name` | `text` | Имя контакта |
-| `role` | `text` | Роль контакта |
-| `email` | `text` | Email |
-| `linkedin` | `text` | LinkedIn URL |
-| `telegram` | `text` | Telegram handle |
-| `max` | unknown/text | Существующее поле; уточнить перед использованием |
-| `source` | `text` | Источник контакта |
-
-### `messages`
-
-Таблица отслеживания outreach-сообщений. Сейчас пустая, оставлена под будущий outreach.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `created_at` | `timestamptz` | Время создания |
-| `vacancy_id` | `uuid` | Связанная вакансия |
-| `contact_id` | `uuid` | Связанный контакт |
-| `channel` | `text` | Канал сообщения |
-| `message_text` | `text` | Текст сообщения |
-| `utm` | `text` | UTM-метки |
-| `sent_at` | `timestamptz` | Время отправки |
-| `status` | `text` | Статус сообщения |
-| `replied_at` | `timestamptz` | Время ответа |
-
-### `tg_channels`
-
-Список Telegram-каналов для парсера.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `username` | `text` | Username канала (без @) |
-| `title` | `text` | Отображаемое название |
-| `is_active` | `boolean` | Включён/выключен парсер для канала |
-| `last_post_id` | `int` | Последний обработанный message_id |
-| `depth_days` | `integer` | Глубина сбора при первом запуске (дефолт 40, диапазон 1–90) |
-| `last_run_at` | `timestamptz` | Когда последний раз парсер обрабатывал канал |
-| `created_at` | `timestamptz` | Время создания |
-
-Правила:
-- `last_post_id = null` = первый запуск, парсер соберёт посты за `depth_days` дней.
-- Сброс канала: удалить и добавить заново — `last_post_id` сбрасывается автоматически.
-- `depth_days` настраивается из CRM.
-
-### `parser_runs`
-
-Лог каждого запуска парсера по каналу.
-
-Поля:
-
-| Поле | Тип | Назначение |
-| --- | --- | --- |
-| `id` | `uuid` | Первичный ключ |
-| `created_at` | `timestamptz` | Время запуска |
-| `channel_id` | `uuid` | FK на `tg_channels` (null = запуск всех каналов) |
-| `trigger` | `text` | `scheduled` или `manual` |
-| `status` | `text` | `ok` или `error` |
-| `elapsed_ms` | `integer` | Время выполнения в мс |
-| `posts_found` | `integer` | Количество новых постов записанных в raw_vacancies |
-| `error_message` | `text` | Текст ошибки, null если ok |
-
-# Схема Базы Данных
-
-Последнее обновление: 2026-05-12
-
-## `raw_vacancies`
-
-Буфер между ingestion layer и worker pipeline.
-
-Все источники (`tg`, `manual`, `hh`, `site`, `reanalyze`) сначала пишут запись в `raw_vacancies`, после чего universal worker обрабатывает очередь.
-
-### Поля
-
-| Поле                    | Тип           | Назначение                                           |
-| ----------------------- | ------------- | ---------------------------------------------------- |
-| `id`                    | `uuid`        | Первичный ключ                                       |
-| `source`                | `text`        | `tg`, `hh`, `manual`, `site`, `reanalyze`            |
-| `tg_message_id`         | `text`        | `{username}/{message_id}` — UNIQUE, для дедупликации |
-| `channel_username`      | `text`        | Username канала                                      |
-| `raw_text`              | `text`        | Исходный текст вакансии/поста                        |
-| `post_url`              | `text`        | Прямая ссылка на источник                            |
-| `posted_at`             | `timestamptz` | Время публикации                                     |
-| `created_at`            | `timestamptz` | Время записи в очередь                               |
-| `updated_at`            | `timestamptz` | Последнее изменение записи                           |
-| `status`                | `text`        | `new` → `processing` → `done` / `error` / `skipped`  |
-| `priority`              | `integer`     | Приоритет обработки                                  |
-| `retry_count`           | `integer`     | Количество retry попыток                             |
-| `processing_started_at` | `timestamptz` | Когда worker взял запись в обработку                 |
-| `processed_at`          | `timestamptz` | Время завершения обработки                           |
-| `parser_version`        | `text`        | Версия parser pipeline                               |
-| `error_message`         | `text`        | Текст ошибки обработки                               |
-
-### Правила
-
-* Все ingestion workflow только вставляют запись в `raw_vacancies`.
-* Webhook не должен выполнять LLM/scoring/enrich.
-* Universal worker читает очередь по `status = 'new'`.
-* Worker сразу ставит:
-
-```sql
-status = 'processing'
-processing_started_at = now()
+# Database Schema
+
+## Vacancies
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | PK |
+| company_id | uuid | FK → companies |
+| link | text | Ссылка на вакансию |
+| role | text | Название вакансии |
+| salary | text | Зарплатная вилка |
+| **status** | text | **Бизнес-воронка: new / sent / replied / interview / offer / closed** |
+| last_stage | text | Предыдущий статус (для closed) |
+| closed_reason | text | Причина закрытия (rejected_by_me, rejected_by_company, ghosted, low_salary, irrelevant, spam, duplicate) |
+| source | text | HH / TG / LinkedIn / Сайт / ... |
+| notes | text | Заметки |
+| next_action | text | Следующий шаг |
+| next_action_at | timestamptz | Дата напоминания |
+| published_at | timestamptz | Дата публикации |
+| priority | text | high / medium / low |
+| score | int | Оценка скоринга |
+| category | text | горячая / норм / мимо |
+| reason | text | Причина оценки |
+| parser_prompt_version | int | Версия промпта парсера |
+| parsed_at | timestamptz | Дата парсинга |
+| analyzer_prompt_version | int | Версия промпта анализатора |
+| analyzed_at | timestamptz | Дата анализа |
+| scoring_prompt_version | int | Версия промпта скоринга |
+| scored_at | timestamptz | Дата скоринга |
+| copywriter_prompt_version | int | Версия промпта копирайтера |
+| copywritten_at | timestamptz | Дата генерации письма |
+| pipeline_stage_id | uuid | FK → pipeline_stages |
+
+## Vacancy Statuses
+
+**Бизнес-воронка (6 статусов):**
+
+```
+new → sent → replied → interview → offer → closed
 ```
 
-* После успешной обработки:
+- **new** — новая вакансия
+- **sent** — отклик отправлен
+- **replied** — ответ получен
+- **interview** — собеседование
+- **offer** — оффер
+- **closed** — терминальный статус (закрыто/отказ)
 
-```sql
-status = 'done'
-processed_at = now()
-```
+**Алиасы (обратная совместимость):**
+- `sobes` → `interview`
+- `meeting` → `interview`
+- `rejected` → `closed`
+- `archive` → `closed`
+- `done` → `new`
 
-* При ошибке:
+**Technical Pipeline (RawVacancy):**
+- `new` → `processing` → `done` / `error` / `skipped`
 
-```sql
-retry_count = retry_count + 1
-```
+## Pipeline Stages
 
-Если `retry_count < 3`:
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | PK |
+| name | text | Название этапа |
+| color | text | Цвет (hex) |
+| order_index | int | Порядок сортировки |
+| source | text | Источник (null = дефолт) |
+| is_base | bool | Базовый этап (можно ли удалить) |
+| base_key | text | Ключ из 6 базовых (new/sent/replied/interview/offer/closed) |
 
-```sql
-status = 'new'
-```
+## Raw Vacancies
 
-Иначе:
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | PK |
+| source | text | tg / agg / manual |
+| tg_message_id | int | ID сообщения в TG |
+| channel_username | text | Username канала |
+| raw_text | text | Исходный текст |
+| post_url | text | Ссылка на пост |
+| posted_at | timestamptz | Дата поста |
+| created_at | timestamptz | Дата создания |
+| status | text | pipeline: new / processing / done / error / skipped |
 
-```sql
-status = 'error'
-processed_at = now()
-```
+## Analysis Log
 
-* Recovery workflow должен возвращать зависшие processing-задачи:
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | PK |
+| vacancy_id | uuid | FK → vacancies |
+| agent | text | parser / analyzer / scoring / copywriter |
+| prompt_key | text | Ключ промпта |
+| prompt_version | int | Версия промпта |
+| input | jsonb | Входные данные |
+| raw_output | text | Сырой вывод |
+| parsed_output | jsonb | Распарсенный вывод |
+| model | text | Модель |
+| error | text | Ошибка |
 
-```sql
-status = 'processing'
-and processing_started_at < now() - interval '15 minutes'
-```
+## Prompts
 
-↓
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | PK |
+| key | text | profile / parser / analyzer / scoring / copywriter |
+| version | int | Версия |
+| name | text | Название |
+| content | text | Содержимое промпта |
+| description | text | Описание |
+| is_active | bool | Активная версия |
+| created_at | timestamptz | Дата создания |
+| updated_at | timestamptz | Дата обновления |
 
-```sql
-status = 'new'
-retry_count = retry_count + 1
-```
+## Other Tables
 
-### Приоритеты
-
-| Source      | Priority |
-| ----------- | -------- |
-| `reanalyze` | 100      |
-| `manual`    | 50       |
-| `hh`        | 30       |
-| `tg`        | 10       |
-| `retry`     | 5        |
-
-### Индексы
-
-```sql
-create index if not exists idx_raw_vacancies_status_created
-on raw_vacancies(status, priority desc, created_at asc);
-
-create index if not exists idx_raw_vacancies_processing_started
-on raw_vacancies(status, processing_started_at);
-```
-
-### Trigger updated_at
-
-```sql
-create or replace function update_updated_at_column()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language 'plpgsql';
-
-DROP TRIGGER IF EXISTS update_raw_vacancies_updated_at
-ON raw_vacancies;
-
-create trigger update_raw_vacancies_updated_at
-before update on raw_vacancies
-for each row
-execute function update_updated_at_column();
-```
-
-## Deprecated / Removed
-
-### `profile`
-
-Удалена. Профиль кандидата теперь живёт в строке `prompts.key = 'profile'`.
-
-## Важные Индексы И Constraints
-
-Ожидаемые constraints и индексы:
-
-```sql
-alter table prompts
-  drop constraint if exists prompts_key_key;
-
-drop index if exists prompts_key_key;
-
-create unique index if not exists prompts_key_version_uidx
-  on prompts(key, version);
-
-create unique index if not exists prompts_active_key_uidx
-  on prompts(key)
-  where is_active = true;
-
-create unique index if not exists sessions_chat_id_uidx
-  on sessions(chat_id);
-
-create index if not exists analysis_log_vacancy_idx
-  on analysis_log(vacancy_id);
-
-create index if not exists analysis_log_agent_version_idx
-  on analysis_log(agent, prompt_version);
-
-create index if not exists analysis_log_created_at_idx
-  on analysis_log(created_at desc);
-
-create index if not exists analysis_log_vacancy_agent_version_idx
-  on analysis_log(vacancy_id, agent, prompt_version desc);
-
-create index if not exists prompts_key_version_desc_idx
-  on prompts(key, version desc);
-
-create index if not exists vacancies_published_at_idx
-  on vacancies(published_at desc);
-
-create index if not exists vacancies_status_idx
-  on vacancies(status);
-
-create index if not exists vacancies_source_idx
-  on vacancies(source);
-
-create index if not exists vacancies_score_idx
-  on vacancies(score);
-
-create index if not exists vacancies_category_idx
-  on vacancies(category);
-
-create index if not exists vacancies_company_id_idx
-  on vacancies(company_id);
-
-create index if not exists vacancy_analysis_vacancy_id_idx
-  on vacancy_analysis(vacancy_id);
-
-create index if not exists pipeline_stages_source_order_idx
-  on pipeline_stages(source, order_index);
-```
-
-## Workflow Версионирования Промптов
-
-Чтобы создать новую версию промпта:
-
-```sql
-select create_prompt_version(
-  'analyzer',
-  'Analyzer v2',
-  'new prompt content',
-  'Describe what changed'
-);
-```
-
-n8n всегда должен читать:
-
-```sql
-select *
-from prompts
-where key = 'analyzer'
-  and is_active = true
-limit 1;
-```
-
-CRM reanalysis can run with either active prompt versions or a selected version set from the vacancy Versions tab.
-
-Default payload:
-
-```json
-{
-  "vacancy_ids": ["..."]
-}
-```
-
-Selected-version payload:
-
-```json
-{
-  "vacancy_ids": ["..."],
-  "prompt_versions": {
-    "scoring": 3,
-    "analyzer": 2,
-    "copywriter": 4
-  }
-}
-```
-
-If `prompt_versions[key]` is present, n8n must load that exact `key + version`. If it is absent, n8n must load `key + is_active = true`. Previous outputs remain available in `analysis_log` for comparison.
-
-После прогона агента:
-
-1. Обновить живое состояние в `vacancies` и/или `vacancy_analysis`.
-2. Записать версию промпта в `vacancies.*_prompt_version`.
-3. Вставить одну строку в `analysis_log`.
-
-## Backlog На Чистку
-
-Не выполнять без отдельного ревью:
-
-- Нормализовать регистр `pipeline_stages.source` в нижний регистр.
-- Удалить дубли этапов воронки по умолчанию.
-- Решить, остаётся ли `vacancy_analysis` таблицей текущих результатов или сливается в `vacancies`.
-- Решить, становятся ли `contacts/messages` полноценными outreach-таблицами.
-- Удалять код/таблицы парсера только если парсер официально убран.
-
-## Правила Изменений
-
-1. Каждое изменение схемы получает SQL-миграцию или задокументированный ручной SQL-блок.
-2. Каждая добавленная колонка должна быть отражена в этом документе.
-3. Не удалять колонки/таблицы в том же шаге, где добавляется замещающий код.
-4. Сначала предпочитать additive-миграции, чистку делать после проверки CRM/n8n/бота.
-5. Держать названия полей n8n, типы CRM и этот документ синхронизированными.
+- **companies** — компании-работодатели
+- **vacancy_analysis** — результаты анализа
+- **profile** — профиль кандидата
+- **agent_configs** — конфигурации агентов
+- **sessions** — сессии TG-бота
+- **tg_channels** — TG-каналы для парсинга
+- **parser_runs** — логи запусков парсера

@@ -1,13 +1,15 @@
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ArrowRight, RefreshCw } from 'lucide-react';
+import { ArrowRight, RefreshCw, Undo2 } from 'lucide-react';
 import { ScoreBadge } from '../ui/ScoreBadge';
 import { StatusDropdown } from '../ui/StatusDropdown';
 import { ClosedReasonDropdown } from '../ui/ClosedReasonDropdown';
 import { SourceIcon } from '../ui/SourceIcon';
 import { useUpdateVacancyStatus, useUpdateClosedReason } from '../../hooks/useVacancies';
 import { useReanalyzingVacancyIds } from '../../hooks/useReanalyze';
+import { STATUS_GROUP } from '../../lib/types';
 import type { Vacancy, VacancyStatus } from '../../lib/types';
+
 
 interface VacancyTableProps {
   vacancies: Vacancy[];
@@ -29,13 +31,23 @@ export function VacancyTable({
   const reanalyzingIds = useReanalyzingVacancyIds();
   const isSelectable = !!onToggleSelect;
 
-  const handleStatusChange = (vacancy: Vacancy, status: VacancyStatus) => {
+  const handleStatusChange = (vacancy: Vacancy, stageId: string, canonicalStatus: VacancyStatus) => {
     updateStatus.mutate({
       id: vacancy.id,
-      status,
-      lastStage: status === 'closed' ? vacancy.status : undefined,
+      status: canonicalStatus,
+      lastStage: STATUS_GROUP[canonicalStatus] === 'terminal' ? vacancy.status : undefined,
+      stageId,
     });
   };
+
+  const handleReopen = (vacancy: Vacancy) => {
+    const reopenTo = (vacancy.last_stage ?? 'new') as VacancyStatus;
+    updateStatus.mutate({
+      id: vacancy.id,
+      status: reopenTo,
+    });
+  };
+
 
   const allSelected = vacancies.length > 0 && vacancies.every(v => selectedIds?.has(v.id));
 
@@ -102,20 +114,32 @@ export function VacancyTable({
                 <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1">
                     <StatusDropdown
-                      value={vacancy.status}
+                      value={vacancy.current_stage_id}
+                      currentStatus={vacancy.status}
                       source={vacancy.source}
                       disabled={isReanalyzing}
-                      onChange={(status) => handleStatusChange(vacancy, status)}
+                      onChange={(stageId, canonicalStatus) => handleStatusChange(vacancy, stageId, canonicalStatus)}
                     />
                     {vacancy.status === 'closed' && (
-                      <ClosedReasonDropdown
-                        value={vacancy.closed_reason}
-                        disabled={isReanalyzing}
-                        onChange={(reason) => updateClosedReason.mutate({ id: vacancy.id, closedReason: reason })}
-                      />
+                      <>
+                        <ClosedReasonDropdown
+                          value={vacancy.closed_reason}
+                          disabled={isReanalyzing}
+                          onChange={(reason) => updateClosedReason.mutate({ id: vacancy.id, closedReason: reason })}
+                        />
+                        <button
+                          onClick={() => handleReopen(vacancy)}
+                          disabled={isReanalyzing || updateStatus.isPending}
+                          className="inline-flex items-center gap-1 px-1.5 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-60"
+                          title="Вернуть в работу"
+                        >
+                          <Undo2 size={11} />
+                        </button>
+                      </>
                     )}
                   </div>
                 </td>
+
                 <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                   {vacancy.published_at
                     ? formatDistanceToNow(new Date(vacancy.published_at), {

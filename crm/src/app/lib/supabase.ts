@@ -1,7 +1,21 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { mockVacancies, mockPipelineStages, mockProfile, mockAgentConfig } from './mockData';
-import { FIXED_SOURCES, canonicalSource, sourceMatches, uniqueCanonicalSources } from './sources';
-import type { Vacancy, PipelineStage, Profile, AgentConfig, Prompt, PromptKey, AgentKey, AnalysisLog, TgChannel, ParserRun, RawVacancy } from './types';
+import { FIXED_SOURCES, canonicalSource, sourceMatches } from './sources';
+import type { Vacancy, PipelineStage, Profile, AgentConfig, Prompt, PromptKey, AgentKey, AnalysisLog, TgChannel, ParserRun, RawVacancy, VacancyStatus, ClosedReason } from './types';
+import { VACANCY_STATUSES } from './types';
+
+/**
+ * Технические статусы очереди (RawVacancy) — НЕ должны проникать в бизнес-воронку.
+ * При materialization raw → vacancy явно проставляем 'new'.
+ */
+const RAW_QUEUE_STATUSES = new Set(['new', 'processing', 'done', 'error', 'skipped']);
+
+/** Приводит статус из БД к бизнес-статусу CRM. Queue-статусы → 'new'. */
+function toBusinessStatus(dbStatus: string): VacancyStatus {
+  if (RAW_QUEUE_STATUSES.has(dbStatus)) return 'new';
+  if (VACANCY_STATUSES.includes(dbStatus as VacancyStatus)) return dbStatus as VacancyStatus;
+  return 'new';
+}
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -36,17 +50,17 @@ async function fetchPagedRows<T>(buildQuery: (from: number, to: number) => Promi
 }
 
 // ─── Пресеты воронок по источникам ─────────────────────────────────────────
-type PresetStage = { name: string; color: string; base_key?: string };
+type PresetStage = { name: string; color: string; base_key?: string; canonical_status?: string };
 export const PRESET_SOURCES = [...FIXED_SOURCES];
 
 /** 6 базовых этапов — единая воронка для всех источников */
 const BASE_STAGES: (PresetStage & { base_key: string })[] = [
-  { name: 'Новые',         color: '#6B7280', base_key: 'new' },
-  { name: 'Отправлено',    color: '#3B82F6', base_key: 'sent' },
-  { name: 'Ответ получен', color: '#EAB308', base_key: 'replied' },
-  { name: 'Собеседование', color: '#8B5CF6', base_key: 'sobes' },
-  { name: 'Встреча',       color: '#22C55E', base_key: 'meeting' },
-  { name: 'Закрыто',       color: '#EF4444', base_key: 'closed' },
+  { name: 'Новые',         color: '#6B7280', base_key: 'new',       canonical_status: 'new' },
+  { name: 'Отправлено',    color: '#3B82F6', base_key: 'sent',      canonical_status: 'sent' },
+  { name: 'Ответ получен', color: '#EAB308', base_key: 'replied',   canonical_status: 'replied' },
+  { name: 'Собеседование', color: '#8B5CF6', base_key: 'interview', canonical_status: 'interview' },
+  { name: 'Оффер',         color: '#10B981', base_key: 'offer',     canonical_status: 'offer' },
+  { name: 'Закрыто',       color: '#EF4444', base_key: 'closed',    canonical_status: 'closed' },
 ];
 
 /** Найти base_key по имени этапа (среди базовых этапов) */
@@ -58,36 +72,36 @@ function baseKeyForStageName(name: string): string | null {
 // Для обратной совместимости — каждый источник может иметь свои кастомные пресеты
 // поверх базовых этапов. Если source-specific пресета нет — используем только базовые.
 export const PIPELINE_PRESETS: Record<string, PresetStage[]> = {
-  default: BASE_STAGES.map(s => ({ name: s.name, color: s.color })),
+  default: BASE_STAGES.map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
   HeadHunter: [
-    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
-    { name: 'Ответ HR',           color: '#F59E0B' },
-    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
+    { name: 'Ответ HR',           color: '#F59E0B', canonical_status: 'replied' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
   ],
   LinkedIn: [
-    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
-    { name: 'Ответили',           color: '#F59E0B' },
-    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
+    { name: 'Ответили',           color: '#F59E0B', canonical_status: 'replied' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
   ],
   SuperJob: [
-    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
-    { name: 'Ответ HR',           color: '#F59E0B' },
-    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
+    { name: 'Ответ HR',           color: '#F59E0B', canonical_status: 'replied' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
   ],
   Telegram: [
-    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
-    { name: 'Ответили',           color: '#F59E0B' },
-    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
+    { name: 'Ответили',           color: '#F59E0B', canonical_status: 'replied' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
   ],
   Zarplata: [
-    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
-    { name: 'Ответ HR',           color: '#F59E0B' },
-    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
+    { name: 'Ответ HR',           color: '#F59E0B', canonical_status: 'replied' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
   ],
   'Habr Career': [
-    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color })),
-    { name: 'Ответили',           color: '#F59E0B' },
-    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color })),
+    ...BASE_STAGES.slice(0, 3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
+    { name: 'Ответили',           color: '#F59E0B', canonical_status: 'replied' },
+    ...BASE_STAGES.slice(3).map(s => ({ name: s.name, color: s.color, canonical_status: s.canonical_status })),
   ],
 };
 
@@ -100,6 +114,7 @@ function getBaseStageRows(): (PresetStage & { source: string | null; is_base: bo
     source: null,
     is_base: true,
     base_key: s.base_key,
+    canonical_status: s.canonical_status,
   }));
 }
 
@@ -225,6 +240,23 @@ function getTextFromLog(log: any): string | null {
   return null;
 }
 
+/**
+ * Определяет тип операции при смене статуса.
+ * Forward  — движение вперёд по воронке.
+ * Rollback — откат ровно на 1 шаг назад.
+ * Reopen   — выход из closed (реактивация).
+ */
+function detectStatusOperation(current: string, next: string): 'forward' | 'rollback' | 'reopen' | 'unknown' {
+  if (current === 'closed' && next !== 'closed') return 'reopen';
+  const CANONICAL_ORDER = ['new', 'sent', 'replied', 'interview', 'offer', 'closed'];
+  const curIdx = CANONICAL_ORDER.indexOf(current);
+  const nextIdx = CANONICAL_ORDER.indexOf(next);
+  if (curIdx === -1 || nextIdx === -1) return 'unknown';
+  if (nextIdx > curIdx) return 'forward';
+  if (nextIdx < curIdx) return 'rollback';
+  return 'unknown';
+}
+
 export const db = {
   vacancies: {
     async getAll(): Promise<Vacancy[]> {
@@ -237,6 +269,7 @@ export const db = {
 
         return vacData.map((v: any) => ({
           ...v,
+          status: toBusinessStatus(v.status),
           company_name: v.companies?.name,
           company_site: v.companies?.site,
           company_branch: v.companies?.branch,
@@ -253,10 +286,10 @@ export const db = {
           .select('source')
           .not('source', 'is', null)
           .range(from, to));
-        return uniqueCanonicalSources((data || []).map((row: any) => row.source));
+        return Array.from(new Set((data || []).map((row: any) => canonicalSource(row.source)).filter(Boolean)));
       }
       await delay(100);
-      return uniqueCanonicalSources(mockVacanciesStore.map(v => v.source));
+      return Array.from(new Set(mockVacanciesStore.map(v => canonicalSource(v.source)).filter(Boolean)));
     },
 
     async getById(id: string): Promise<Vacancy | null> {
@@ -299,6 +332,7 @@ export const db = {
 
         return {
           ...vac,
+          status: toBusinessStatus(vac.status),
           company_name: vac.companies?.name,
           company_site: vac.companies?.site,
           company_branch: vac.companies?.branch,
@@ -311,30 +345,75 @@ export const db = {
       return mockVacanciesStore.find(v => v.id === id) || null;
     },
 
-    async updateStatus(id: string, status: string, lastStage?: string): Promise<void> {
+    /** Устанавливает бизнес-метки при смене статуса */
+    async updateStatus(id: string, status: string, lastStage?: string, stageId?: string): Promise<void> {
+      const now = new Date().toISOString();
+      const terminalStates = new Set(['closed']);
+
+      // Определяем тип операции
+      let currentStatus = '';
+      if (supabase) {
+        const { data } = await supabase!.from('vacancies').select('status, closed_at').eq('id', id).maybeSingle();
+        if (data) currentStatus = toBusinessStatus(data.status);
+      } else {
+        const v = mockVacanciesStore.find(v => v.id === id);
+        if (v) currentStatus = v.status;
+      }
+
+      const operation = detectStatusOperation(currentStatus, status);
+
+      // Business timestamps — заполняем ТОЛЬКО для forward (новые метки)
+      // Для rollback и reopen НЕ сбрасываем существующие метки
+      const businessTimestamps: Record<string, string | null> = {};
+      if (operation === 'forward') {
+        const statusTimestampMap: Record<string, string> = {
+          sent: 'sent_at',
+          replied: 'replied_at',
+          closed: 'closed_at',
+        };
+        const targetField = statusTimestampMap[status];
+        if (targetField) businessTimestamps[targetField] = now;
+        // При forward в closed не сбрасываем sent_at/replied_at
+      }
+
       if (supabase) {
         const payload: Record<string, string | null> = { status };
-        if (status === 'closed' && lastStage) payload.last_stage = lastStage;
-        // Сбрасываем last_stage и closed_reason при выходе из closed
-        if (status !== 'closed') {
+
+        if (operation === 'reopen') {
           payload.last_stage = null;
           payload.closed_reason = null;
+        } else if (terminalStates.has(status)) {
+          if (lastStage) payload.last_stage = lastStage;
         }
+
+        // Сохраняем current_stage_id если передан
+        if (stageId) payload.current_stage_id = stageId;
+
         const { error } = await supabase.from('vacancies').update(payload).eq('id', id);
         if (error) throw error;
         return;
       }
+
+      // Mock mode
       await delay(100);
       const vacancy = mockVacanciesStore.find(v => v.id === id);
       if (vacancy) {
-        if (status === 'closed' && lastStage) vacancy.last_stage = lastStage as any;
-        if (status !== 'closed') {
+        if (operation === 'reopen') {
           vacancy.last_stage = null;
           vacancy.closed_reason = null;
+        } else if (terminalStates.has(status)) {
+          if (lastStage) vacancy.last_stage = lastStage as any;
         }
         vacancy.status = status as any;
+        if (stageId) vacancy.current_stage_id = stageId;
+
+        // Business timestamps — только forward
+        if (businessTimestamps.sent_at) vacancy.sent_at = businessTimestamps.sent_at;
+        if (businessTimestamps.replied_at) vacancy.replied_at = businessTimestamps.replied_at;
+        if (businessTimestamps.closed_at) vacancy.closed_at = businessTimestamps.closed_at;
       }
     },
+
 
     async updateClosedReason(id: string, closedReason: string | null): Promise<void> {
       if (supabase) {
@@ -366,6 +445,41 @@ export const db = {
         vacancy.next_action = nextAction;
         vacancy.next_action_at = nextActionAt;
       }
+    },
+
+    async bulkUpdateStatus(params: {
+      ids: string[];
+      status: VacancyStatus;
+      closedReason?: ClosedReason | null;
+    }): Promise<void> {
+      const { ids, status, closedReason } = params;
+      const payload: Record<string, unknown> = {
+        status,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (closedReason !== undefined) {
+        // Явно передан null — сбрасываем
+        // Явно передан reason — устанавливаем
+        payload.closed_reason = closedReason;
+      }
+
+      if (supabase) {
+        const { error } = await supabase
+          .from('vacancies')
+          .update(payload)
+          .in('id', ids);
+        if (error) throw error;
+        return;
+      }
+
+      // Mock mode
+      await delay(100);
+      mockVacanciesStore = mockVacanciesStore.map(v =>
+        ids.includes(v.id)
+          ? { ...v, status: status as any, ...(closedReason !== undefined ? { closed_reason: closedReason as any } : {}) }
+          : v
+      );
     },
 
     async updateLetter(id: string, letterEdited: string): Promise<void> {
@@ -483,7 +597,7 @@ export const db = {
         );
       }
       await delay(100);
-      return uniqueCanonicalSources(mockPipelineStore.map(stage => stage.source));
+      return Array.from(new Set(mockPipelineStore.map(stage => canonicalSource(stage.source)).filter(Boolean)));
     },
 
     async updateStages(stages: PipelineStage[]): Promise<void> {
@@ -502,18 +616,20 @@ export const db = {
       ];
     },
 
-    async addStage(name: string, color: string, orderIndex: number, source?: string): Promise<PipelineStage> {
+    async addStage(name: string, color: string, orderIndex: number, source?: string, canonicalStatus?: VacancyStatus | null): Promise<PipelineStage> {
+      const cs = canonicalStatus ?? baseKeyForStageName(name) as VacancyStatus | null;
+
       if (supabase) {
         const { data, error } = await supabase
           .from('pipeline_stages')
-          .insert({ name, color, order_index: orderIndex, ...(source ? { source } : {}) })
+          .insert({ name, color, order_index: orderIndex, canonical_status: cs, ...(source ? { source } : {}) })
           .select()
           .single();
         if (error) throw error;
         return data;
       }
       await delay(100);
-      const newStage: PipelineStage = { id: Date.now().toString(), name, color, order_index: orderIndex, source };
+      const newStage: PipelineStage = { id: Date.now().toString(), name, color, order_index: orderIndex, source, canonical_status: cs };
       mockPipelineStore = [...mockPipelineStore, newStage];
       return newStage;
     },
@@ -529,6 +645,7 @@ export const db = {
         order_index: idx + 1,
         source: normalized,
         base_key: baseKeyForStageName(stage.name),
+        canonical_status: stage.canonical_status ?? baseKeyForStageName(stage.name),
       }));
 
       if (supabase) {
@@ -552,6 +669,7 @@ export const db = {
         ...rows.map((stage, idx) => ({
           id: `source-${normalized}-${idx}`,
           ...stage,
+          canonical_status: stage.canonical_status as PipelineStage['canonical_status'],
         })),
       ];
     },
@@ -609,10 +727,7 @@ export const db = {
     async seedPreset(sources: string[]): Promise<void> {
       // Всегда включаем дефолтную воронку (null) + все фиксированные источники
       const fixedSlots: Array<string | null> = [null, ...FIXED_SOURCES];
-      // Плюс уникальные канонические источники из вакансий, которых нет в FIXED_SOURCES
-      const extraSources = uniqueCanonicalSources(sources)
-        .filter(s => !(FIXED_SOURCES as readonly string[]).includes(s));
-      const slots: Array<string | null> = [...fixedSlots, ...extraSources];
+      const slots: Array<string | null> = [...fixedSlots];
 
       if (supabase) {
         for (const source of slots) {
@@ -629,6 +744,7 @@ export const db = {
               order_index: idx + 1,
               source,
               base_key: baseKeyForStageName(p.name),
+              canonical_status: p.canonical_status ?? null,
             }))
           );
 
@@ -653,6 +769,7 @@ export const db = {
             color: p.color,
             order_index: idx + 1,
             source: source ?? undefined,
+            canonical_status: p.canonical_status as PipelineStage['canonical_status'],
           })),
         ];
       }
@@ -660,9 +777,7 @@ export const db = {
 
     async seedPresetFast(sources: string[]): Promise<void> {
       const fixedSlots: Array<string | null> = [null, ...FIXED_SOURCES];
-      const extraSources = uniqueCanonicalSources(sources)
-        .filter(s => !(FIXED_SOURCES as readonly string[]).includes(s));
-      const slots: Array<string | null> = [...fixedSlots, ...extraSources];
+      const slots: Array<string | null> = [...fixedSlots];
 
       if (supabase) {
         const { data: existing, error } = await supabase
@@ -682,6 +797,7 @@ export const db = {
             order_index: idx + 1,
             source,
             base_key: baseKeyForStageName(p.name),
+            canonical_status: p.canonical_status ?? null,
           }));
         });
 
@@ -708,6 +824,7 @@ export const db = {
             color: p.color,
             order_index: idx + 1,
             source: source ?? undefined,
+            canonical_status: p.canonical_status as PipelineStage['canonical_status'],
           })),
         ];
       }

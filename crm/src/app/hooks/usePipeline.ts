@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { useDistinctSources } from './useDistinctSources';
-import type { PipelineStage } from '../lib/types';
+import { FIXED_SOURCES } from '../lib/constants/sources';
+import type { PipelineStage, VacancyStatus } from '../lib/types';
 
 export function usePipeline(source?: string) {
   const { user } = useAuth();
@@ -42,8 +42,8 @@ export function useUpdatePipeline() {
 export function useAddPipelineStage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ name, color, orderIndex, source }: { name: string; color: string; orderIndex: number; source?: string }) =>
-      db.pipeline.addStage(name, color, orderIndex, source),
+    mutationFn: ({ name, color, orderIndex, source, canonicalStatus }: { name: string; color: string; orderIndex: number; source?: string; canonicalStatus?: VacancyStatus | null }) =>
+      db.pipeline.addStage(name, color, orderIndex, source, canonicalStatus),
     onSuccess: () => invalidateAll(queryClient),
   });
 }
@@ -83,9 +83,8 @@ export function useRenamePipelineStage() {
 
 export function useSeedPipelinePreset() {
   const queryClient = useQueryClient();
-  const sources = useDistinctSources();
   return useMutation({
-    mutationFn: () => db.pipeline.seedPreset(sources),
+    mutationFn: () => db.pipeline.seedPreset([...FIXED_SOURCES]),
     onSuccess: () => invalidateAll(queryClient),
   });
 }

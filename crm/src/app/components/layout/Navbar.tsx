@@ -16,7 +16,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link to="/dashboard" className="text-xl font-bold">
-            WORK
+            WWWWORK
           </Link>
 
           <div className="hidden md:flex gap-6">

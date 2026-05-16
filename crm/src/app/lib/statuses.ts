@@ -1,107 +1,131 @@
-import type { PipelineStage, VacancyStatus } from './types';
-import { normalizeSourceKey } from './sources';
+import type { VacancyStatus, PipelineStage } from './types';
+import { VACANCY_STATUSES, STATUS_ALIASES, STATUS_TRANSITIONS } from './types';
+
 
 export interface StatusOption {
-  value: VacancyStatus;
+  value: string;         // stage.id или canonical status (fallback)
   label: string;
   color: string;
+  canonicalStatus: VacancyStatus;
 }
 
-/** 6 базовых ключей воронки — всегда и у всех */
-export const BASE_STATUS_KEYS: readonly string[] = ['new', 'sent', 'replied', 'sobes', 'meeting', 'closed'];
-
+/** Канонические статусы в порядке воронки */
+export const CANONICAL_STATUS_ORDER: readonly VacancyStatus[] = [
+  'new', 'sent', 'replied', 'interview', 'offer', 'closed',
+];
 
 export const DEFAULT_STATUS_CONFIG: Record<string, StatusOption> = {
-  sent: { value: 'sent', label: 'Отправлено', color: '#3B82F6' },
-  replied: { value: 'replied', label: 'Ответ получен', color: '#EAB308' },
-  sobes: { value: 'sobes', label: 'Собеседование', color: '#8B5CF6' },
-
-  meeting: { value: 'meeting', label: 'Встреча', color: '#22C55E' },
-  closed: { value: 'closed', label: 'Закрыто', color: '#EF4444' },
-  new: { value: 'new', label: 'Новое', color: '#6B7280' },
+  new:       { value: 'new',       label: 'Новое',               color: '#6B7280', canonicalStatus: 'new' },
+  sent:      { value: 'sent',      label: 'Отправлено',          color: '#3B82F6', canonicalStatus: 'sent' },
+  replied:   { value: 'replied',   label: 'Ответ получен',       color: '#EAB308', canonicalStatus: 'replied' },
+  interview: { value: 'interview', label: 'Собеседование',       color: '#8B5CF6', canonicalStatus: 'interview' },
+  offer:     { value: 'offer',     label: 'Оффер',               color: '#10B981', canonicalStatus: 'offer' },
+  closed:    { value: 'closed',    label: 'Закрыто',             color: '#EF4444', canonicalStatus: 'closed' },
 };
 
 export const DEFAULT_STAGE_COLOR = '#6B7280';
 
-export function normalizeSource(source?: string | null) {
-  return normalizeSourceKey(source);
-}
-
 /**
- * Определяет ключ статуса для этапа.
- * Если у этапа есть base_key (например 'sent', 'replied'), использует его.
- * Иначе генерирует stage_N на основе order_index.
- * Для первых 6 этапов без base_key возвращает базовые ключи.
+ * Приводит любой статус к canonical.
+ * - sobes → interview (обратная совместимость)
+ * - stage_N → null (UI-слой, не lifecycle)
+ * - неизвестный → null
  */
-export function statusKeyForStage(
-  orderIndex: number,
-  baseKey?: string | null
-): VacancyStatus {
-  if (baseKey) return baseKey as VacancyStatus;
-  if (orderIndex >= 1 && orderIndex <= BASE_STATUS_KEYS.length) {
-    return BASE_STATUS_KEYS[orderIndex - 1] as VacancyStatus;
+export function toCanonicalStatus(status: string): VacancyStatus | null {
+  if (VACANCY_STATUSES.includes(status as VacancyStatus)) {
+    return status as VacancyStatus;
   }
-  return `stage_${orderIndex}` as VacancyStatus;
+  return STATUS_ALIASES[status] ?? null;
 }
 
 /**
- * Возвращает порядковый индекс статуса (1-based).
- * Для базовых ключей возвращает их позицию (new→1, sent→2, replied→3, sobes→4, meeting→5, closed→6).
- * Для кастомных stage_N извлекает N.
+ * Порядковый номер статуса в воронке (0-based).
  */
-export function orderIndexForStatus(status: VacancyStatus): number | null {
-  const baseIdx = BASE_STATUS_KEYS.indexOf(status);
-  if (baseIdx !== -1) return baseIdx + 1;
-
-  const match = String(status).match(/^stage_(\d+)$/);
-  if (match) return parseInt(match[1], 10);
-
-  return null;
+export function orderIndexForStatus(status: VacancyStatus | string): number | null {
+  const canonical = toCanonicalStatus(status);
+  if (!canonical) return null;
+  const idx = CANONICAL_STATUS_ORDER.indexOf(canonical);
+  return idx >= 0 ? idx : null;
 }
 
 /**
  * Проверяет, является ли статус "прогрессным" (ответили и дальше).
- * Статусы с order_index >= 3 — это "ответили и дальше" (replied, sobes, meeting, closed).
+ * replied, interview, offer — прогресс.
+ * new, sent — нет.
+ * closed — завершённый прогресс (да).
  */
-export function isRepliedOrBeyond(status: VacancyStatus): boolean {
-  if (status === 'new' || status === 'sent') return false;
-  return true; // replied, sobes, meeting, closed, stage_7, ...
+export function isRepliedOrBeyond(status: VacancyStatus | string): boolean {
+  const idx = orderIndexForStatus(status);
+  if (idx === null) return false;
+  return idx >= CANONICAL_STATUS_ORDER.indexOf('replied');
 }
 
 /**
- * Собирает опции статусов для выпадающего списка на основе этапов воронки.
- * - Всегда включает «Новое» (new) как первый этап — это базовый статус, который есть у всех источников
- * - Если у этапа есть base_key (например 'sent', 'replied'), использует его как ключ статуса
- * - Иначе генерирует stage_N на основе order_index
- * - Статус rejected добавляется в конце как дополнительная опция
+ * Собирает опции статусов для выпадающего списка.
+ * Использует pipeline stages (с canonical_status) для кастомных лейблов и цветов,
+ * либо DEFAULT_STATUS_CONFIG если stages не переданы или пусты.
+ * Если `currentStatus` передан — фильтрует по допустимым переходам (transition guard).
  */
 export function getStatusOptions(
   stages: PipelineStage[] = [],
-  includeClosed = true
+  includeClosed = true,
+  currentStatus?: VacancyStatus,
 ): StatusOption[] {
-  const sortedStages = [...stages].sort((a, b) => a.order_index - b.order_index);
+  // Если stages есть — строим опции из них
+  const stagesWithStatus = stages.filter(s => s.canonical_status);
+  if (stagesWithStatus.length > 0) {
+    let filteredStages = stagesWithStatus;
+    if (!includeClosed) {
+      filteredStages = filteredStages.filter(s => s.canonical_status !== 'closed');
+    }
 
-  const seenKeys = new Set<string>();
-  const activeOptions: StatusOption[] = [];
+    const options: StatusOption[] = [];
 
-  // 1) Всегда добавляем «Новое» первым — базовый этап, обязательный для всех источников
-  activeOptions.push(DEFAULT_STATUS_CONFIG.new);
-  seenKeys.add('new');
+    for (const stage of filteredStages) {
+      // Transition guard — проверяем по canonical_status
+      if (currentStatus && stage.canonical_status !== currentStatus) {
+        const allowed = STATUS_TRANSITIONS[currentStatus];
+        if (allowed && !allowed.includes(stage.canonical_status!)) {
+          continue;
+        }
+      }
 
-  // 2) Добавляем этапы из воронки, пропуская дубликат 'new'
-  for (const stage of sortedStages) {
-    const key = statusKeyForStage(stage.order_index, stage.base_key);
-    if (seenKeys.has(key)) continue;
-    seenKeys.add(key);
+      options.push({
+        value: stage.id,
+        label: stage.name,
+        color: stage.color,
+        canonicalStatus: stage.canonical_status!,
+      });
+    }
 
-    const fallback = DEFAULT_STATUS_CONFIG[key];
-    activeOptions.push({
-      value: key,
-      label: stage.name?.trim() || fallback?.label || key,
-      color: stage.color || fallback?.color || DEFAULT_STAGE_COLOR,
-    });
+    // Если получился пустой список но есть currentStatus — добавляем его
+    if (options.length === 0 && currentStatus) {
+      const def = DEFAULT_STATUS_CONFIG[currentStatus];
+      if (def) options.push(def);
+    }
+
+    return options;
   }
 
-  return activeOptions;
+  // Нет stages — fallback на DEFAULT_STATUS_CONFIG
+  let statuses = includeClosed
+    ? [...CANONICAL_STATUS_ORDER]
+    : CANONICAL_STATUS_ORDER.filter(s => s !== 'closed');
 
+  if (currentStatus) {
+    const allowed = STATUS_TRANSITIONS[currentStatus];
+    if (allowed) {
+      statuses = allowed;
+    }
+    if (!statuses.includes(currentStatus)) {
+      statuses = [currentStatus, ...statuses];
+    }
+  }
+
+  return statuses.map(key => DEFAULT_STATUS_CONFIG[key] ?? {
+    value: key,
+    label: key,
+    color: DEFAULT_STAGE_COLOR,
+    canonicalStatus: key as VacancyStatus,
+  });
 }

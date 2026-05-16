@@ -3,7 +3,7 @@ import { useVacancies } from '../hooks/useVacancies';
 import { useDistinctSources } from '../hooks/useDistinctSources';
 import { canonicalSource } from '../lib/sources';
 import { Funnel } from '../components/dashboard/Funnel';
-import { getClosedReasonOption } from '../lib/closedReasons';
+import { ClosedReasonsStats } from '../components/dashboard/ClosedReasonsStats';
 import { isRepliedOrBeyond } from '../lib/statuses';
 import {
   LineChart,
@@ -96,44 +96,47 @@ export function Analytics() {
         </div>
       )}
 
-      {/* Воронка с переключателем источника */}
-      <div className="mb-6 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <p className="text-xs text-gray-400">
-            {funnelSource ?? 'Общая'} · {
-              funnelSource
-                ? vacancies.filter(v => canonicalSource(v.source) === canonicalSource(funnelSource)).length
-                : vacancies.length
-            } вакансий
-          </p>
-          <div className="flex flex-wrap gap-1">
-            <button
-              onClick={() => setFunnelSource(null)}
-              className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                funnelSource === null
-                  ? 'bg-gray-800 dark:bg-white text-white dark:text-gray-900'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              Общая
-            </button>
-            {sources.map(src => (
-              <button
-                key={src}
-                onClick={() => setFunnelSource(src)}
-                className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                  funnelSource === src
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {src}
-              </button>
-            ))}
-          </div>
+      {/* Source filter chips */}
+      <div className="mb-4 flex flex-wrap gap-1">
+        <button
+          onClick={() => setFunnelSource(null)}
+          className={`px-3 py-1 text-xs rounded-full transition-colors ${
+            funnelSource === null
+              ? 'bg-gray-800 dark:bg-white text-white dark:text-gray-900'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+          }`}
+        >
+          Общая
+        </button>
+        {sources.map(src => (
+          <button
+            key={src}
+            onClick={() => setFunnelSource(src)}
+            className={`px-3 py-1 text-xs rounded-full transition-colors ${
+              funnelSource === src
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            {src}
+          </button>
+        ))}
+      </div>
+
+      {/* Воронки — пайплайн + причины закрытия */}
+      <div className="flex flex-col lg:flex-row gap-4 mb-6">
+        <div className="flex-1 min-w-0">
+          <Funnel source={funnelSource ?? undefined} />
         </div>
-        {/* Тот же компонент что и на дашборде — одна логика, нет расхождений */}
-        <Funnel source={funnelSource ?? undefined} />
+        <div className="flex-1 min-w-0">
+          <ClosedReasonsStats
+            vacancies={
+              funnelSource
+                ? vacancies.filter(v => canonicalSource(v.source) === canonicalSource(funnelSource))
+                : vacancies
+            }
+          />
+        </div>
       </div>
 
       {/* Period selector */}
@@ -219,34 +222,10 @@ export function Analytics() {
           )}
         </div>
 
-        {/* Closed reasons */}
-        <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
-          <h3 className="font-semibold mb-4">Причины закрытия</h3>
-          {closedReasonsData.length === 0 ? (
-            <p className="text-gray-400 text-sm">Нет закрытых вакансий</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="border-b border-gray-200 dark:border-gray-700">
-                <tr>
-                  <th className="text-left py-2">Причина</th>
-                  <th className="text-right py-2">Кол-во</th>
-                </tr>
-              </thead>
-              <tbody>
-                {closedReasonsData.map(({ reason, count }) => {
-                  const option = getClosedReasonOption(reason);
-                  return (
-                    <tr key={reason} className="border-b border-gray-200 dark:border-gray-700">
-                      <td className="py-2" style={{ color: option?.color ?? '#6B7280' }}>
-                        {option?.label ?? reason}
-                      </td>
-                      <td className="text-right py-2">{count}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
+        {/* Closed reasons — теперь воронка сверху, здесь только заглушка */}
+        <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded opacity-60">
+          <h3 className="font-semibold mb-2">Причины закрытия</h3>
+          <p className="text-xs text-gray-400">Воронка причин — сверху</p>
         </div>
       </div>
     </div>

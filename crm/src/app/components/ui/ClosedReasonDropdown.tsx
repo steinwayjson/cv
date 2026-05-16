@@ -1,4 +1,4 @@
-import { CLOSED_REASON_OPTIONS, getClosedReasonOption } from '../../lib/closedReasons';
+import { CLOSED_REASON_OPTIONS, CLOSED_REASON_GROUPS, getClosedReasonOption } from '../../lib/closedReasons';
 import type { ClosedReason } from '../../lib/types';
 
 interface ClosedReasonDropdownProps {
@@ -22,10 +22,14 @@ export function ClosedReasonDropdown({ value, onChange, disabled, fullWidth }: C
       <option value="" style={{ color: '#6B7280' }}>
         Выберите причину...
       </option>
-      {CLOSED_REASON_OPTIONS.map(({ value: key, label, color }) => (
-        <option key={key} value={key} style={{ color }}>
-          {label}
-        </option>
+      {CLOSED_REASON_GROUPS.map(group => (
+        <optgroup key={group.type} label={group.label}>
+          {group.options.map(({ value: key, label, color }) => (
+            <option key={key} value={key} style={{ color }}>
+              {label}
+            </option>
+          ))}
+        </optgroup>
       ))}
     </select>
   );
