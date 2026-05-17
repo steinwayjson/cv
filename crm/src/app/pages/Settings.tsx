@@ -26,6 +26,8 @@ export function Settings() {
   const [activePromptKey, setActivePromptKey] = useState<PromptKey | null>(null);
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
   const [promptDrafts, setPromptDrafts] = useState<Record<string, string>>({});
+  const [editingVersionId, setEditingVersionId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string>('');
   const { data: promptVersionsData, isLoading: versionsLoading } = usePromptVersions(activePromptKey);
   const promptVersions = promptVersionsData ?? EMPTY_PROMPTS;
 
@@ -91,6 +93,26 @@ export function Settings() {
       {
         onSuccess: () => toast.success(`Активирована версия v${selectedPrompt.version}`),
         onError: error => toast.error(error.message || 'Не удалось активировать версию'),
+      }
+    );
+  };
+
+  const handleRenameVersion = (prompt: Prompt) => {
+    if (!editingName.trim() || editingName.trim() === prompt.name) {
+      setEditingVersionId(null);
+      return;
+    }
+    updatePrompt.mutate(
+      { id: prompt.id, content: prompt.content, description: prompt.description, name: editingName.trim() },
+      {
+        onSuccess: () => {
+          toast.success('Версия переименована');
+          setEditingVersionId(null);
+        },
+        onError: error => {
+          toast.error(error.message || 'Не удалось переименовать');
+          setEditingVersionId(null);
+        },
       }
     );
   };
@@ -168,14 +190,39 @@ export function Settings() {
                           key={prompt.id}
                           type="button"
                           onClick={() => setSelectedPromptId(prompt.id)}
+                          onDoubleClick={e => {
+                            e.stopPropagation();
+                            setEditingVersionId(prompt.id);
+                            setEditingName(prompt.name);
+                          }}
                           className={[
-                            'px-2.5 py-1 rounded text-xs font-medium border transition-colors',
+                            'px-2.5 py-1 rounded text-xs font-medium border transition-colors relative group',
                             selectedPrompt.id === prompt.id
                               ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200'
                               : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',
                           ].join(' ')}
                         >
-                          v{prompt.version}{prompt.is_active ? ' · active' : ''}
+                          {editingVersionId === prompt.id ? (
+                            <input
+                              autoFocus
+                              value={editingName}
+                              onChange={e => setEditingName(e.target.value)}
+                              onBlur={() => handleRenameVersion(prompt)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') handleRenameVersion(prompt);
+                                if (e.key === 'Escape') setEditingVersionId(null);
+                              }}
+                              onClick={e => e.stopPropagation()}
+                              className="w-24 bg-transparent outline-none border-b border-blue-500 text-xs"
+                            />
+                          ) : (
+                            <>
+                              v{prompt.version}{prompt.is_active ? ' · active' : ''}
+                              {prompt.name && prompt.name !== `v${prompt.version}` && (
+                                <span className="ml-1 text-gray-400">· {prompt.name}</span>
+                              )}
+                            </>
+                          )}
                         </button>
                       ))
                     )}

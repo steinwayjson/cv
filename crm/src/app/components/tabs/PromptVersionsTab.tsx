@@ -40,15 +40,78 @@ function getLoggedScore(output: unknown): number | null {
   return score != null && Number.isFinite(score) ? score : null;
 }
 
+function tryExtractReadableText(output: Record<string, unknown>): string | null {
+  const textField = output.text;
+  if (typeof textField !== 'string') return null;
+  try {
+    const parsed = JSON.parse(textField);
+    if (typeof parsed === 'object' && parsed !== null) {
+      const parts: string[] = [];
+      if (parsed.subject) parts.push(`📧 ${parsed.subject}`);
+      if (parsed.body) {
+        const body = (parsed.body as string).replace(/\s+/g, ' ').trim();
+        parts.push(body.length > 80 ? body.slice(0, 80) + '…' : body);
+      }
+      if (parsed.company_product) {
+        const cp = (parsed.company_product as string).replace(/\s+/g, ' ').trim();
+        parts.push(`🏢 ${cp.slice(0, 80)}`);
+      }
+      if (parsed.comment) {
+        const cm = (parsed.comment as string).replace(/\s+/g, ' ').trim();
+        parts.push(cm.slice(0, 80));
+      }
+      if (parsed.score != null) parts.push(`⭐ ${parsed.score}/100`);
+      if (parsed.category) parts.push(`📊 ${parsed.category}`);
+      if (parsed.reason) {
+        const r = (parsed.reason as string).replace(/\s+/g, ' ').trim();
+        parts.push(r.length > 80 ? r.slice(0, 80) + '…' : r);
+      }
+      if (parsed.company_culture) {
+        const cc = (parsed.company_culture as string).replace(/\s+/g, ' ').trim();
+        parts.push(`🏛 ${cc.slice(0, 80)}`);
+      }
+      if (parsed.segment) parts.push(`segment ${parsed.segment}`);
+      if (parsed.brief?.narrative) {
+        const n = (parsed.brief.narrative as string).replace(/\s+/g, ' ').trim();
+        parts.push(`📝 ${n.slice(0, 80)}`);
+      }
+      if (parts.length > 0) return parts.join(' · ');
+    }
+    return String(parsed).replace(/\s+/g, ' ').trim().slice(0, 220);
+  } catch {
+    return textField.replace(/\s+/g, ' ').trim().slice(0, 220);
+  }
+}
+
 function getOutputPreview(log: AnalysisLog) {
   if (log.error) return log.error;
+  if (log.parsed_output) {
+    const extracted = tryExtractReadableText(log.parsed_output);
+    if (extracted) return extracted;
+    return JSON.stringify(log.parsed_output).slice(0, 220);
+  }
   if (typeof log.raw_output === 'string' && log.raw_output.trim()) {
     return log.raw_output.replace(/\s+/g, ' ').trim().slice(0, 220);
   }
-  if (log.parsed_output) {
-    return JSON.stringify(log.parsed_output).slice(0, 220);
-  }
   return 'No output saved';
+}
+
+function renderExpandedContent(log: AnalysisLog): string {
+  const output = log.parsed_output ?? log.raw_output ?? log.error ?? null;
+  if (!output) return 'null';
+
+  // Try to unwrap { text: "..." } pattern where text is JSON string
+  if (typeof output === 'object' && 'text' in output && typeof (output as Record<string, unknown>).text === 'string') {
+    const textField = (output as Record<string, unknown>).text as string;
+    try {
+      const parsed = JSON.parse(textField);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return textField;
+    }
+  }
+
+  return JSON.stringify(output, null, 2);
 }
 
 function AgentHistoryRow({
@@ -189,7 +252,7 @@ function AgentHistoryRow({
 
               {isExpanded && (
                 <pre className="mt-2 max-h-48 overflow-auto rounded bg-gray-50 dark:bg-gray-900 p-2 text-xs whitespace-pre-wrap">
-                  {JSON.stringify(log.parsed_output ?? log.raw_output ?? log.error ?? null, null, 2)}
+                  {renderExpandedContent(log)}
                 </pre>
               )}
             </div>

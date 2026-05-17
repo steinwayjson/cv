@@ -24,8 +24,8 @@ export function usePromptVersions(key: PromptKey | null, limit = 5) {
 export function useUpdatePrompt() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, content, description }: { id: string; content: string; description?: string | null }) =>
-      db.prompts.update(id, content, description),
+    mutationFn: ({ id, content, description, name }: { id: string; content: string; description?: string | null; name?: string | null }) =>
+      db.prompts.update(id, content, description, name),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['prompts'] });
       queryClient.invalidateQueries({ queryKey: ['prompts', variables.id] });

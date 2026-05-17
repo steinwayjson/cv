@@ -10,13 +10,13 @@ interface ClosedReasonsStatsProps {
 export const ClosedReasonsStats = memo(function ClosedReasonsStats({ vacancies }: ClosedReasonsStatsProps) {
   const stats = useMemo(() => buildClosedReasonsStats(vacancies), [vacancies]);
 
-  if (stats.totalClosed === 0) return null;
-
   // Все причины вместе, отсортированы по убыванию
   const allReasons = useMemo(
     () => [...stats.pipelineReasons, ...stats.systemReasons].sort((a, b) => b.count - a.count),
     [stats]
   );
+
+  if (stats.totalClosed === 0) return null;
 
   return (
     <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">

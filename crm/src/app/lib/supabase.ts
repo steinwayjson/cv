@@ -924,12 +924,13 @@ export const db = {
         .slice(0, limit);
     },
 
-    async update(id: string, content: string, description?: string | null): Promise<Prompt | null> {
+    async update(id: string, content: string, description?: string | null, name?: string | null): Promise<Prompt | null> {
       const payload: Record<string, string | null> = {
         content,
         updated_at: new Date().toISOString(),
       };
       if (description !== undefined) payload.description = description;
+      if (name !== undefined && name !== null) payload.name = name;
 
       if (supabase) {
         const { data, error } = await supabase
